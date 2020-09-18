@@ -16,8 +16,14 @@ import RutaAutenticada from "./components/security/RutaAutenticada";
 import PrefilUsuario from "./components/security/PerfilUsuario";
 import NuevoInmueble from "./components/views/NuevoInmueble";
 import EditarInmuebles from "./components/views/EditarInmuebles";
+
+import AddElements from './components/inventory/AddElements'
+
 import AddProvider from './components/provider/AddProvider'
-import TestSelect from './components/provider/TestSelect'
+import ListProvider from './components/provider/ListProvider'
+import EditProvider from './components/provider/EditProvider'
+import TestSelect from './components/main/TestSelect'
+import Home from './components/main/home'
 
 function App(props) {
   let firebase = React.useContext(FirebaseContext);
@@ -93,15 +99,39 @@ function App(props) {
 
               <RutaAutenticada
                 exact
-                path="/proveedor/agregar"
+                path="/inventarios/agregar/:table/:type"
+                autenticadoFirebase={firebase.auth.currentUser}
+                component={AddElements}
+              />
+              <RutaAutenticada
+                exact
+                path="/proveedor/agregar/:type"
                 autenticadoFirebase={firebase.auth.currentUser}
                 component={AddProvider}
+              />
+              <RutaAutenticada
+                exact
+                path="/proveedor/mostrar/:type/:query"
+                autenticadoFirebase={firebase.auth.currentUser}
+                component={ListProvider}
+              />
+              <RutaAutenticada
+                exact
+                path="/proveedor/editar/:id"
+                autenticadoFirebase={firebase.auth.currentUser}
+                component={EditProvider}
               />
               <RutaAutenticada
                 exact
                 path="/test/select"
                 autenticadoFirebase={firebase.auth.currentUser}
                 component={TestSelect}
+              />
+              <RutaAutenticada
+                exact
+                path="/home"
+                autenticadoFirebase={firebase.auth.currentUser}
+                component={Home}
               />
             </Switch>
           </Grid>

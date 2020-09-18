@@ -1,0 +1,47 @@
+.optionsI{
+	transition: background 0.5s, color 0.5s;
+}
+
+.optionsILar{
+	box-shadow:inset 0 2px 0 0 black;
+	width: 100%;
+	height: 33.1%;
+	font-family: Tahoma, serif;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+.optionsILar:hover{
+	background-color: #045FB4;
+	cursor: pointer;
+	color: white;
+}
+
+.optionsILat{
+	box-shadow:inset 0 2px 0 0 black;
+	width: 100%;
+	height: 24.9%;
+	font-family: Tahoma, serif;
+	display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.addItem{
+	height: 49.9%;
+}
+
+.optionsILat:hover{
+	background-color: #045FB4;
+	cursor: pointer;
+	color: white;
+}
+.advertenciaILab{
+	box-shadow:inset 0 2px 0 0 black;
+	width: 100%;
+	height: 100%;
+	font-family: Tahoma, serif;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}

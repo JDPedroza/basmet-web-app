@@ -12,6 +12,10 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  FormLabel,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
 } from "@material-ui/core";
 import { consumerFirebase } from "../../server";
 import { crearKeyword } from "../../sesion/actions/keyWords";
@@ -40,9 +44,8 @@ const style = {
   },
 };
 
-const ControlledOpenSelect = (props) => {
+const EditProvider = (props) => {
   const [open, setOpen] = useState(false);
-  const { type } = props.match.params;
 
   let [provider, changeDataProvider] = useState({
     business: "",
@@ -57,26 +60,64 @@ const ControlledOpenSelect = (props) => {
     contact_email: "",
     contact_phone: "",
     keywords: "",
-    type_provider: "",
-    last_bill: "",
-    nid_elements_provider: "",
+    type_provider: "business",
   });
 
-  useEffect(() => {
-    const { type } = props.match.params;
-    changeDataProvider((prev) => ({
-      ...prev,
-      type_provider: type,
-    }));
+  useEffect(async () => {
+    const { id } = props.match.params;
+    const providerCollection = props.firebase.db.collection("Providers");
+    const result = await providerCollection.doc(id).get();
+
+    loadDataProvider(result.data());
   }, []);
+
+  const loadDataProvider = (provider) => {
+
+    changeDataProvider(() => ({
+      business: provider.business,
+      type_document: provider.type_document,
+      nid: provider.nid,
+      country: provider.country,
+      city: provider.city,
+      address: provider.address,
+      email: provider.email,
+      phone: provider.phone,
+      contact_name: provider.contact_name,
+      contact_email: provider.contact_email,
+      contact_phone: provider.contact_phone,
+      keywords: provider.keywords,
+      type_provider: provider.type_provider,
+    }));
+  };
 
   const changeData = (e) => {
     const { name, value } = e.target;
 
-    changeDataProvider((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    if (
+      (name === "type_provider" && value === "business") ||
+      value === "people"
+    ) {
+      console.log("reset");
+      changeDataProvider((prev) => ({
+        business: "",
+        type_document: "",
+        id: "",
+        country: "",
+        city: "",
+        address: "",
+        email: "",
+        phone: "",
+        contact_name: "",
+        contact_email: "",
+        contact_phone: "",
+        [name]: value,
+      }));
+    } else {
+      changeDataProvider((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   const handleClose = () => {
@@ -87,22 +128,10 @@ const ControlledOpenSelect = (props) => {
     setOpen(true);
   };
 
-  const saveDataFirebase = async (e) => {
+  const saveDataFirebase = (e) => {
     e.preventDefault();
 
-    const jsonFormatElementsProvider = { elements: [] };
-
-    let nidElementsProvider = "";
-
-    //generar la lista de elementsProvider
-    await props.firebase.db
-      .collection("ElementsProviders")
-      .add(jsonFormatElementsProvider)
-      .then((success)=>{
-        nidElementsProvider = success.id;
-      });
-
-      provider.nid_elements_provider = nidElementsProvider;
+    const { id } = props.match.params;
 
     let textSearch = "";
 
@@ -130,9 +159,10 @@ const ControlledOpenSelect = (props) => {
 
     props.firebase.db
       .collection("Providers")
-      .add(provider)
+      .doc(id)
+      .set(provider, { merge: true })
       .then((success) => {
-        props.history.push("/");
+        props.history.goBack();
       })
       .catch((error) => {
         console.log("error: ", error);
@@ -150,12 +180,7 @@ const ControlledOpenSelect = (props) => {
                 Principal
               </Link>
               <Typography color="textPrimary">Proveedores</Typography>
-              <Typography color="textPrimary">Agregar</Typography>
-              <Typography color="textPrimary">
-                {provider.type_provider === "business"
-                  ? "Empresa"
-                  : "Persona Natural"}
-              </Typography>
+              <Typography color="textPrimary">Editar</Typography>
             </Breadcrumbs>
           </Grid>
         </Grid>
@@ -334,7 +359,7 @@ const ControlledOpenSelect = (props) => {
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField
-                name="nid"
+                name="id"
                 variant="outlined"
                 fullWidth
                 label={provider.type_document || "Tipo Identificación"}
@@ -405,7 +430,7 @@ const ControlledOpenSelect = (props) => {
               style={style.submit}
               onClick={saveDataFirebase}
             >
-              GUARDAR
+              GUARDAR CAMBIOS
             </Button>
           </Grid>
         </Grid>
@@ -414,4 +439,4 @@ const ControlledOpenSelect = (props) => {
   );
 };
 
-export default consumerFirebase(ControlledOpenSelect);
+export default consumerFirebase(EditProvider);
