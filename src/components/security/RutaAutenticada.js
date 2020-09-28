@@ -16,7 +16,7 @@ function RutaAutenticada({
         autenticado === true || autenticadoFirebase != null ? (
           <Component {...props} {...rest} />
         ) : (
-          <Redirect to="/auth/loginUsuario" />
+          <Redirect to="/iniciar_sesion" />
         )
       }
     />

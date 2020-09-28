@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import Grid from "@material-ui/core/Grid";
-import ListaInmobuebles from "./components/views/ListaInmobuebles";
 import AppNavBar from "./components/layouts/AppNawBar";
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 import "./App.css";
@@ -14,16 +13,29 @@ import { useStateValue } from "./sesion/store";
 import { Snackbar } from "@material-ui/core";
 import RutaAutenticada from "./components/security/RutaAutenticada";
 import PrefilUsuario from "./components/security/PerfilUsuario";
-import NuevoInmueble from "./components/views/NuevoInmueble";
-import EditarInmuebles from "./components/views/EditarInmuebles";
 
-import AddElements from './components/inventory/AddElements'
+//inventory
+import AddElements from "./components/inventory/AddElements";
+import AddStandarizations from "./components/inventory/AddStandarizations";
+import ListElements from "./components/inventory/ListElements";
 
-import AddProvider from './components/provider/AddProvider'
-import ListProvider from './components/provider/ListProvider'
-import EditProvider from './components/provider/EditProvider'
-import TestSelect from './components/main/TestSelect'
-import Home from './components/main/home'
+//processes
+import AddProcesses from "./components/process/AddProcesses";
+
+//clients
+import AddClients from "./components/client/AddClients";
+import ListClients from "./components/client/ListClients";
+
+//clients
+import AddPointOperation from "./components/pointsOperation/AddPointOperation";
+
+import AddProvider from "./components/provider/AddProvider";
+import ListProvider from "./components/provider/ListProvider";
+import EditProvider from "./components/provider/EditProvider";
+import TestSelect from "./components/main/TestSelect";
+import Home from "./components/main/home";
+
+import Page404 from "./components/error/Page404";
 
 function App(props) {
   let firebase = React.useContext(FirebaseContext);
@@ -68,41 +80,58 @@ function App(props) {
             <Switch>
               <RutaAutenticada
                 exact
-                path="/"
-                autenticadoFirebase={firebase.auth.currentUser}
-                component={ListaInmobuebles}
-              />
-              <RutaAutenticada
-                exact
-                path="/auth/editUsuario"
+                path="/perfil/modify"
                 autenticadoFirebase={firebase.auth.currentUser}
                 component={PrefilUsuario}
               />
+              <Route path="/perfil/add" exact component={RegistrarUsuario} />
+              <Route path="/iniciar_sesion" exact component={Login} />
               <RutaAutenticada
                 exact
-                path="/inmueble/nuevo"
+                path="/inventarios/agregar/productos_en_proceso/:type"
                 autenticadoFirebase={firebase.auth.currentUser}
-                component={NuevoInmueble}
+                component={AddStandarizations}
               />
-              <RutaAutenticada
-                exact
-                path="/inmueble/editar/:id"
-                autenticadoFirebase={firebase.auth.currentUser}
-                component={EditarInmuebles}
-              />
-              <Route
-                path="/auth/registrarUsuario"
-                exact
-                component={RegistrarUsuario}
-              />
-              <Route path="/auth/loginUsuario" exact component={Login} />
-
               <RutaAutenticada
                 exact
                 path="/inventarios/agregar/:table/:type"
                 autenticadoFirebase={firebase.auth.currentUser}
                 component={AddElements}
               />
+              <RutaAutenticada
+                exact
+                path="/inventarios/mostrar/:table/:query"
+                autenticadoFirebase={firebase.auth.currentUser}
+                component={ListElements}
+              />
+
+              <RutaAutenticada
+                exact
+                path="/procesos/agregar/:type"
+                autenticadoFirebase={firebase.auth.currentUser}
+                component={AddProcesses}
+              />
+
+              <RutaAutenticada
+                exact
+                path="/clientes/agregar/:type"
+                autenticadoFirebase={firebase.auth.currentUser}
+                component={AddClients}
+              />
+              <RutaAutenticada
+                exact
+                path="/clientes/mostrar/:type/:query"
+                autenticadoFirebase={firebase.auth.currentUser}
+                component={ListClients}
+              />
+
+              <RutaAutenticada
+                exact
+                path="/puntos_operacion/agregar/:type"
+                autenticadoFirebase={firebase.auth.currentUser}
+                component={AddPointOperation}
+              />
+
               <RutaAutenticada
                 exact
                 path="/proveedor/agregar/:type"
@@ -133,6 +162,7 @@ function App(props) {
                 autenticadoFirebase={firebase.auth.currentUser}
                 component={Home}
               />
+              <Route component={Page404} />
             </Switch>
           </Grid>
         </MuiThemeProvider>

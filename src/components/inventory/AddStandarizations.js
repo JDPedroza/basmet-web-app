@@ -8,14 +8,6 @@ import {
   Typography,
   TextField,
   Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormGroup,
-  FormControlLabel,
-  Checkbox,
-  Divider,
   TableContainer,
   Table,
   TableHead,
@@ -24,18 +16,11 @@ import {
   TableRow,
   IconButton,
 } from "@material-ui/core";
-import Autocomplete, {
-  createFilterOptions,
-} from "@material-ui/lab/Autocomplete";
+import Autocomplete from "@material-ui/lab/Autocomplete";
 import { consumerFirebase } from "../../server";
-import {
-  MuiPickersUtilsProvider,
-  KeyboardDatePicker,
-} from "@material-ui/pickers";
 
 //utils
 import { useStateValue } from "../../sesion/store";
-import MomentUtils from "@date-io/moment";
 import { v4 as uuidv4 } from "uuid";
 import { openMensajePantalla } from "../../sesion/actions/snackBarAction";
 
@@ -56,11 +41,6 @@ const style = {
     padding: "20px",
     minheight: 650,
   },
-  paperWarning: {
-    marginTop: 2,
-    padding: "5px",
-    minheight: 650,
-  },
   form: {
     width: "100%",
     padding: 20,
@@ -74,17 +54,34 @@ const style = {
     margin: 1,
     minWidth: 120,
   },
+  divForm: {
+    marginTop: "20px",
+    marginLeft: "20px",
+  },
+  divButtom: {
+    marginTop: "20px",
+  },
 };
 
-const AddElement = (props) => {
+const AddStandarizations = (props) => {
+  //Generals
+  const { type } = props.match.params;
+  const [{ sesion }, dispatch] = useStateValue();
+
+  //dataName
+  const [name, setName] = useState("");
+
+  //dataRawMaterials
   const [elementsRawMaterials, setElementsRawMaterial] = useState([
-    { title: "Prueba", nid: "" },
+    { title: "", nid: "" },
   ]);
+  //dataSupplies
   const [elementsSupplies, setElementsSupplies] = useState([
     { title: "", nid: "" },
   ]);
 
-  let [items, setDataItems] = useState({
+  //selectedElementsAll
+  const [items, setDataItems] = useState({
     raw_materials: [
       {
         nid: 0,
@@ -98,17 +95,22 @@ const AddElement = (props) => {
         quantity: 0,
         description: "",
       },
-    ]
+    ],
   });
 
-  const [value, setValue] = useState([{ title: "" }]);
+  //selectedElementsRawMaterials
+  const [selectedTitlesRawMaterials, setSelectedTitlesRawMaterials] = useState([
+    { title: "" },
+  ]);
+  //selectedElementsSupplies
   const [selectedTitlesSupplies, setSelectedTitlesSupplies] = useState([
     { title: "" },
   ]);
 
+  //getData
   const fetchMyAPI = useCallback(async () => {
-    let itemsRawMaterials = [];
     //getDataRawMaterials
+    let itemsRawMaterials = [];
     let getDataRawMaterials = await props.firebase.db
       .collection("RawMaterial")
       .doc("6Ti3WLE0cav83i0rYozs")
@@ -119,6 +121,7 @@ const AddElement = (props) => {
       let jsonFormatElements = {
         title: dataRawMaterials.elements[i].title,
         nid: dataRawMaterials.elements[i].nid,
+        quantity: dataRawMaterials.elements[i].quantity,
       };
       itemsRawMaterials.push(jsonFormatElements);
     }
@@ -127,7 +130,6 @@ const AddElement = (props) => {
 
     //getDataSupplies
     let itemsSupplies = [];
-
     let getDataSupplies = await props.firebase.db
       .collection("Supplies")
       .doc("TdxeXYYQKxGxfF3dQIUe")
@@ -138,10 +140,10 @@ const AddElement = (props) => {
       let jsonFormatElements = {
         title: dataSupplies.elements[i].title,
         nid: dataSupplies.elements[i].nid,
+        quantity: dataSupplies.elements[i].quantity,
       };
       itemsSupplies.push(jsonFormatElements);
     }
-
     setElementsSupplies(itemsSupplies);
   }, []);
 
@@ -149,15 +151,24 @@ const AddElement = (props) => {
     fetchMyAPI();
   }, [fetchMyAPI]);
 
+  const changeDataName = (e) => {
+    let name = e.target.value;
+    setName(name);
+  };
+
+  //newProgress
   const handleItemChange = (i, event, table) => {
-    let data = "";
+    let data = [];
+    let dataElemensAvaibles = [];
     let atribute = "";
     if (table === "rawMaterials") {
       atribute = "raw_materials";
-      data = items.data;
+      data = items.raw_materials;
+      dataElemensAvaibles = elementsRawMaterials;
     } else {
       atribute = "supplies";
       data = items.supplies;
+      dataElemensAvaibles = elementsSupplies;
     }
 
     const name = event.target.name;
@@ -174,13 +185,14 @@ const AddElement = (props) => {
 
   const handleItemAdd = (table) => {
     if (table === "rawMaterials") {
-      const tempValue = value;
-      tempValue.push({ title: "" });
+      const tempSelectedTitlesRawMaterials = selectedTitlesRawMaterials;
+      tempSelectedTitlesRawMaterials.push({ title: "" });
 
-      setValue(tempValue);
+      setSelectedTitlesRawMaterials(tempSelectedTitlesRawMaterials);
 
       const raw_materials = items.raw_materials;
       raw_materials.push({
+        nid: "",
         quantity: 0,
         description: "",
       });
@@ -196,10 +208,9 @@ const AddElement = (props) => {
 
       const supplies = items.supplies;
       supplies.push({
+        nid: "",
         quantity: 0,
         description: "",
-        unit_value: 0,
-        total_value: 0,
       });
       setDataItems({
         ...items,
@@ -210,9 +221,9 @@ const AddElement = (props) => {
 
   const handleItemRemove = (i, table) => {
     if (table === "rawMaterials") {
-      const tempValue = value;
-      tempValue.splice(i, 1);
-      setValue(tempValue);
+      const tempSelectedTitlesRawMaterials = selectedTitlesRawMaterials;
+      tempSelectedTitlesRawMaterials.splice(i, 1);
+      setSelectedTitlesRawMaterials(tempSelectedTitlesRawMaterials);
 
       const raw_materials = items.raw_materials;
       raw_materials.splice(i, 1);
@@ -234,8 +245,45 @@ const AddElement = (props) => {
     }
   };
 
+  //saveData
   const saveDataFirebase = async (e) => {
     e.preventDefault();
+
+    let nid = uuidv4();
+
+    let jsonFormatElementStandardization = {
+      nid,
+      name,
+      raw_materials: items.raw_materials,
+      supplies: items.supplies,
+    };
+
+    let dataStandardizationsBD = await props.firebase.db
+      .collection("Standardizations")
+      .doc("3qPO90cfep2Xhg89rvnu")
+      .get();
+
+    let dataStandardizations = dataStandardizationsBD.data();
+
+    let arrayElements = dataStandardizations.elements;
+    
+    arrayElements.push(jsonFormatElementStandardization);
+
+    let jsonFormatStandardization = {
+      elements: arrayElements,
+    }
+
+    props.firebase.db
+      .collection("Standardizations")
+      .doc("3qPO90cfep2Xhg89rvnu")
+      .set(jsonFormatStandardization, { merge: true })
+      .then((success) => {
+        openMensajePantalla(dispatch, {
+          open: true,
+          mensaje: "SE GUARDO EL PROCESO",
+        });
+        props.history.replace(`/procesos/mostrar/search`);
+      });
   };
 
   return (
@@ -250,9 +298,23 @@ const AddElement = (props) => {
               </Link>
               <Typography color="textPrimary">Inventario</Typography>
               <Typography color="textPrimary">Agregar</Typography>
-              <Typography color="textPrimary">Productos en proceso </Typography>
-              <Typography color="textPrimary">Nuevo Proceso</Typography>
+              <Typography color="textPrimary">Productos en Proceso</Typography>
+              <Typography color="textPrimary">Estandarizar Producto</Typography>
             </Breadcrumbs>
+          </Grid>
+        </Grid>
+      </Paper>
+      <Paper style={style.paperForm}>
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={12}>
+            <TextField
+              name="product"
+              variant="outlined"
+              fullWidth
+              label="Producto"
+              value={name}
+              onChange={changeDataName}
+            />
           </Grid>
         </Grid>
       </Paper>
@@ -260,7 +322,7 @@ const AddElement = (props) => {
         <Grid container spacing={2} style={style.form}>
           <Grid item xs={12} md={12}>
             <Typography color="textPrimary" variant="h6">
-              Insumos
+              Materia Prima
             </Typography>
           </Grid>
           <TableContainer item xs={12} sm={12}>
@@ -270,7 +332,7 @@ const AddElement = (props) => {
                   <TableCell align="center" style={{ width: "65%" }}>
                     Descripcion
                   </TableCell>
-                  <TableCell align="center" style={{ width: "15%" }}>
+                  <TableCell align="center" style={{ width: "25%" }}>
                     Cantidad
                   </TableCell>
                   <TableCell align="center" style={{ width: "10%" }}>
@@ -290,21 +352,21 @@ const AddElement = (props) => {
                       <TableCell align="center">
                         <Autocomplete
                           id="select_provider"
-                          options={elementsSupplies}
-                          value={value[idx].title}
+                          options={elementsRawMaterials}
+                          value={selectedTitlesRawMaterials[idx].title}
                           onChange={(event, newDataProvider) => {
                             const data = items.raw_materials;
                             let tempValue = null;
                             if (newDataProvider !== null) {
-                              tempValue = value;
+                              tempValue = selectedTitlesRawMaterials;
                               tempValue[idx] = newDataProvider;
-                              setValue(tempValue);
+                              setSelectedTitlesRawMaterials(tempValue);
                               data[idx].description = newDataProvider.title;
                               data[idx].nid = newDataProvider.nid;
                             } else {
-                              tempValue = value;
+                              tempValue = selectedTitlesRawMaterials;
                               tempValue[idx] = { title: "", nid: "" };
-                              setValue(tempValue);
+                              setSelectedTitlesRawMaterials(tempValue);
                               data[idx].description = "";
                               data[idx].nid = "";
                             }
@@ -361,7 +423,7 @@ const AddElement = (props) => {
         <Grid container spacing={2} style={style.form}>
           <Grid item xs={12} md={12}>
             <Typography color="textPrimary" variant="h6">
-              Materia Prima
+              Insumos
             </Typography>
           </Grid>
           <TableContainer item xs={12} sm={12}>
@@ -371,7 +433,7 @@ const AddElement = (props) => {
                   <TableCell align="center" style={{ width: "65%" }}>
                     Descripcion
                   </TableCell>
-                  <TableCell align="center" style={{ width: "15%" }}>
+                  <TableCell align="center" style={{ width: "25%" }}>
                     Cantidad
                   </TableCell>
                   <TableCell align="center" style={{ width: "10%" }}>
@@ -390,22 +452,22 @@ const AddElement = (props) => {
                     <TableRow key={idx}>
                       <TableCell align="center">
                         <Autocomplete
-                          id="select_element_raw_materials"
-                          options={elementsRawMaterials}
+                          id="select_element_supplies"
+                          options={elementsSupplies}
                           value={selectedTitlesSupplies[idx].title}
                           onChange={(event, newDataProvider) => {
                             const data = items.supplies;
                             let tempValue = null;
                             if (newDataProvider !== null) {
-                              tempValue = value;
+                              tempValue = selectedTitlesSupplies;
                               tempValue[idx] = newDataProvider;
-                              setValue(tempValue);
+                              setSelectedTitlesSupplies(tempValue);
                               data[idx].description = newDataProvider.title;
                               data[idx].nid = newDataProvider.nid;
                             } else {
-                              tempValue = value;
+                              tempValue = selectedTitlesSupplies;
                               tempValue[idx] = { title: "", nid: "" };
-                              setValue(tempValue);
+                              setSelectedTitlesSupplies(tempValue);
                               data[idx].description = "";
                               data[idx].nid = "";
                             }
@@ -456,16 +518,6 @@ const AddElement = (props) => {
           </TableContainer>
         </Grid>
       </Paper>
-      <Paper style={style.paperWarning}>
-        <Grid container spacing={2} style={style.form}>
-          <Grid item xs={12} md={12}>
-            <Typography color="textPrimary">
-              Elementos Necesarios (Por favor, ingrese los elementos necesario
-              para el desarrollo del producto)
-            </Typography>
-          </Grid>
-        </Grid>
-      </Paper>
       <Paper style={style.paperForm}>
         <Grid container justify="center">
           <Grid item xs={12} sm={6}>
@@ -487,4 +539,4 @@ const AddElement = (props) => {
   );
 };
 
-export default consumerFirebase(AddElement);
+export default consumerFirebase(AddStandarizations);

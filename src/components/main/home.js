@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import imgGuide from "./images/Guia.jpg";
 import iconInventario from "./images/icon_inventario.png";
+import iconProcess from "./images/icon_process.png"
+import iconClients from "./images/icon_clients.png"
 import iconPuntoOperacion from "./images/icon_puntosOperacion.png";
 import iconEmpleado from "./images/icon_empleado.png";
 import iconTraslados from "./images/icon_translados.png";
@@ -32,11 +34,6 @@ const style = {
     height: "100%",
     flexDirection: "column",
   },
-  gridContainerExtras: {
-    width: "100%",
-    height: "40%",
-    flexDirection: "column",
-  },
   gridItem: {
     flex: 1,
     display: "flex",
@@ -53,6 +50,18 @@ const style = {
 const Home = (props) => {
   let [stateModules, changeStateModules] = useState({
     moduleI: {
+      class: "hoverAllow",
+      face: "front",
+      option: 0,
+      query: "",
+    },
+    modulePro: {
+      class: "hoverAllow",
+      face: "front",
+      option: 0,
+      query: "",
+    },
+    moduleC: {
       class: "hoverAllow",
       face: "front",
       option: 0,
@@ -95,6 +104,8 @@ const Home = (props) => {
 
     if (id === "moduleI") {
       stateModulesTemp = stateModules.moduleI;
+    } else if (id === "moduleC") {
+      stateModulesTemp = stateModules.moduleC;
     } else if (id === "moduleP") {
       stateModulesTemp = stateModules.moduleP;
     } else if (id === "moduleE") {
@@ -118,8 +129,11 @@ const Home = (props) => {
       stateModulesTemp.class = "selectOptionDown";
       stateModulesTemp.face = "down";
       stateModulesTemp.option = value;
+    } else if (face === "back" && stateModulesTemp.query === "modify") {
+      stateModulesTemp.class = "selectOptionDown";
+      stateModulesTemp.face = "down";
+      stateModulesTemp.option = value;
     } else {
-      props.history.push("/");
     }
 
     console.log(stateModulesTemp);
@@ -135,6 +149,7 @@ const Home = (props) => {
   const resetSelected = (id) => {
     const namesModules = [
       "moduleI",
+      "moduleC",
       "moduleP",
       "moduleE",
       "moduleE",
@@ -237,20 +252,22 @@ const Home = (props) => {
                     : ""
                 }
               />
-              {stateModules.moduleI.option === 1 &&
+              <ItemOptions
+                title="Productos en proceso"
+                href={
+                  stateModules.moduleI.query !== "add"
+                    ? `/inventarios/mostrar/productos_en_proceso/${stateModules.moduleI.query}`
+                    : "/inventarios/agregar/productos_en_proceso/standardize"
+                }
+              />
+              {stateModules.moduleI.option !== 1 &&
               stateModules.moduleI.face === "back" ? (
-                ""
+                <ItemOptions
+                  title="Productos en Embalaje"
+                  href={`/inventarios/mostrar/productos_en_embalaje/${stateModules.moduleI.query}`}
+                />
               ) : (
-                <Grid container style={style.gridContainerExtras}>
-                  <ItemOptions
-                    title="Productos en Proceso"
-                    href={`/inventarios/mostrar/productos_en_proceso/${stateModules.moduleI.query}`}
-                  />
-                  <ItemOptions
-                    title="Productos en Embalaje"
-                    href={`/inventarios/mostrar/productos_en_embalaje/${stateModules.moduleI.query}`}
-                  />
-                </Grid>
+                ""
               )}
             </Grid>
           </div>
@@ -263,7 +280,7 @@ const Home = (props) => {
                     ? "materia_prima"
                     : stateModules.moduleI.option === 2
                     ? "herramientas_y_equipos"
-                    :"insumos"
+                    : "insumos"
                 }/factura`}
               />
               <ItemOptions
@@ -272,6 +289,118 @@ const Home = (props) => {
                   stateModules.moduleI.option === 1
                     ? "materia_prima"
                     : stateModules.moduleI.option === 2
+                    ? "herramientas_y_equipos"
+                    : "insumos"
+                }/independiente`}
+              />
+            </Grid>
+          </div>
+        </div>
+      </div>
+      <div class="modules" id="modulePro">
+        <div id="dProcesos" class={stateModules.modulePro.class}>
+          <Avatar src={imgGuide} style={style.avatar} variant="square" />
+          <div class="lado adelante">
+            <Avatar src={iconProcess} style={style.icon} variant="square" />
+            <h1>PROCESOS</h1>
+          </div>
+          <div class="lado arriba">
+            <Grid container style={style.gridContainer}>
+              <ItemOptions
+                title="Agregar Proceso"
+                href="/procesos/agregar/new"
+              />
+              <ItemOptions
+                title="Consultar Proceso"
+                href="/procesos/mostrar/search"
+              />
+              <ItemOptions
+                title="Modificar Proceso"
+                href="/procesos/mostrar/modify"
+              />
+            </Grid>
+          </div>
+          <div class="lado atras"></div>
+          <div class="lado abajo"></div>
+        </div>
+      </div>
+      <div class="modules" id="moduleC">
+        <div id="dClient" class={stateModules.moduleC.class}>
+          <Avatar src={imgGuide} style={style.avatar} variant="square" />
+          <div class="lado adelante">
+            <Avatar src={iconClients} style={style.icon} variant="square" />
+            <h1>CLIENTES</h1>
+          </div>
+          <div class="lado arriba">
+            <Grid container style={style.gridContainer}>
+              <ItemOptions
+                title="Agregar Cliente"
+                onclick={() =>
+                  moduleSelected("moduleC", 1, stateModules.moduleC.face, "add")
+                }
+              />
+              <ItemOptions
+                title="Consultar Cliente"
+                onclick={() =>
+                  moduleSelected(
+                    "moduleC",
+                    2,
+                    stateModules.moduleC.face,
+                    "search"
+                  )
+                }
+              />
+              <ItemOptions
+                title="Modificar Cliente"
+                onclick={() =>
+                  moduleSelected(
+                    "moduleC",
+                    3,
+                    stateModules.moduleC.face,
+                    "modify"
+                  )
+                }
+              />
+            </Grid>
+          </div>
+          <div class="lado atras">
+            <Grid container style={style.gridContainer}>
+              <ItemOptions
+                title="Empresa"
+                href={
+                  stateModules.moduleC.query === "add"
+                    ? "/clientes/agregar/business"
+                    : `/clientes/mostrar/business/${stateModules.moduleC.query}`
+                }
+              />
+              <ItemOptions
+                title="Persona Natural"
+                href={
+                  stateModules.moduleC.query === "add"
+                    ? "/clientes/agregar/people"
+                    : `/clientes/mostrar/people/${stateModules.moduleC.query}`
+                }
+              />
+            </Grid>
+          </div>
+          <div class="lado abajo">
+            <Grid container style={style.gridContainer}>
+              <ItemOptions
+                title="Agregar por medio de factura"
+                href={`/inventarios/agregar/${
+                  stateModules.moduleC.option === 1
+                    ? "materia_prima"
+                    : stateModules.moduleC.option === 2
+                    ? "herramientas_y_equipos"
+                    : "insumos"
+                }/factura`}
+              />
+              <ItemOptions
+                title="Agregar de forma independiente"
+                href={`/inventarios/agregar/${
+                  stateModules.moduleC.option === 1
+                    ? "materia_prima"
+                    : stateModules.moduleC.option === 2
                     ? "herramientas_y_equipos"
                     : "insumos"
                 }/independiente`}
@@ -295,7 +424,9 @@ const Home = (props) => {
             <Grid container style={style.gridContainer}>
               <ItemOptions
                 title="Agregar Punto de Operación"
-                href="/puntoOperacion/agregar"
+                onclick={() =>
+                  moduleSelected("moduleP", 2, stateModules.moduleP.face)
+                }
               />
               <ItemOptions
                 title="Consultar Punto de Operación"
@@ -314,10 +445,12 @@ const Home = (props) => {
           <div class="lado atras">
             <Grid container style={style.gridContainer}>
               <ItemOptions
-                title="Modificar Punto de Operación"
-                onclick={() =>
-                  moduleSelected("moduleP", 3, stateModules.moduleP.face)
-                }
+                title="Cliente"
+                href="/puntos_operacion/agregar/client"
+              />
+              <ItemOptions
+                title="Interno"
+                href="/puntos_operacion/agregar/internal"
               />
             </Grid>
           </div>

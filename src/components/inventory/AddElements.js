@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Container,
   Paper,
@@ -32,10 +32,14 @@ import {
   MuiPickersUtilsProvider,
   KeyboardDatePicker,
 } from "@material-ui/pickers";
+
+//utils
+import { useStateValue } from "../../sesion/store";
 import MomentUtils from "@date-io/moment";
 import { v4 as uuidv4 } from "uuid";
+import { openMensajePantalla } from "../../sesion/actions/snackBarAction";
 
-//temp
+//icons
 import HomeIcon from "@material-ui/icons/Home";
 import AddIcon from "@material-ui/icons/Add";
 import HighlightOffIcon from "@material-ui/icons/HighlightOff";
@@ -71,13 +75,20 @@ const filter = createFilterOptions();
 
 const AddElement = (props) => {
   const { type, table } = props.match.params;
-
+  const [{ sesion }, dispatch] = useStateValue();
+  const [lastItemsProvider, setLastItemsProvider] = useState([
+    { title: "", nid: "" },
+  ]);
   const [itemsProvider, setItemsProvider] = useState([{ title: "", nid: "" }]);
 
   let [providers, setDataProviders] = useState({
     bill: false,
     data: [],
   });
+
+  let [pointsOperation, seDataPointsOperation] =  useState({
+    data: []
+  })
 
   let [provider, setDataProvider] = useState({
     id: 0,
@@ -96,9 +107,6 @@ const AddElement = (props) => {
   let [bill, setDataBill] = useState({
     nid: 0,
     date: "",
-    iva: false,
-    rf: false,
-    ica: false,
     sub_total: 0,
     value_iva: 0,
     value_rf: 0,
@@ -131,8 +139,8 @@ const AddElement = (props) => {
 
   const [value, setValue] = useState([{ title: "" }]);
 
-  useEffect(async () => {
-    const { table, type } = props.match.params;
+  const fetchMyAPI = useCallback(async () => {
+
     if (type === "factura") {
       let objectQuery = props.firebase.db
         .collection("Providers")
@@ -181,10 +189,15 @@ const AddElement = (props) => {
         };
         itemsInventory.push(jsonFormatElements);
       }
-
       setItemsProvider(itemsInventory);
     }
+
+
   }, []);
+
+  useEffect(() => {
+    fetchMyAPI();
+  }, [fetchMyAPI]);
 
   const handleItemChange = (i, event) => {
     const data = items.data;
@@ -268,6 +281,7 @@ const AddElement = (props) => {
     let elementsProvider = data.data();
     let itemsProvider = elementsProvider.elements;
 
+    setLastItemsProvider(itemsProvider);
     setItemsProvider(itemsProvider);
   };
 
@@ -281,10 +295,12 @@ const AddElement = (props) => {
   };
 
   const handleDateChange = (date) => {
+    const format = date.format("DD-MM-YYYY");
     setSelectedDate(date);
+
     setDataBill((prev) => ({
       ...prev,
-      date,
+      format,
     }));
   };
 
@@ -333,27 +349,28 @@ const AddElement = (props) => {
   const saveDataFirebase = async (e) => {
     e.preventDefault();
     const { type, table } = props.match.params;
-    let jsonFormat = {
-      nid_provider: 0,
-      nid: 0,
-      date: "",
-      sub_total: 0,
-      value_iva: 0,
-      value_rf: 0,
-      value_ica: 0,
-      total: 0,
-      items: "",
-    };
+
+    let jsonFormatBillBuy = {};
+    let jsonFormatProvider = {};
+    let jsonFormatElementsProvider = {};
+    let jsonFormatAddElements = {};
 
     if (type === "factura") {
       //add BillBuy
-      let jsonFormatBillBuy = {};
+      jsonFormatBillBuy = {};
+
+      let today = new Date();
+      let dd = today.getDate();
+      let mm = today.getMonth() + 1;
+      let yyyy = today.getFullYear();
+      let date = `${dd}-${mm}-${yyyy}`;
 
       let total = 0;
       jsonFormatBillBuy.nid_provider = provider.nid;
       jsonFormatBillBuy.nid = bill.nid;
+
       if (bill.date === "") {
-        jsonFormatBillBuy.date = Date();
+        jsonFormatBillBuy.date = date;
       } else {
         jsonFormatBillBuy.date = bill.date;
       }
@@ -392,14 +409,14 @@ const AddElement = (props) => {
         .doc(provider.id)
         .get();
 
-      let providerTemp = dataProviders.data();
+      jsonFormatProvider = dataProviders.data();
 
-      providerTemp.last_bill = idBill;
+      jsonFormatProvider.last_bill = idBill;
 
       await props.firebase.db
         .collection("Providers")
         .doc(provider.id)
-        .set(providerTemp, { merge: true })
+        .set(jsonFormatProvider, { merge: true })
         .then((success) => {
           console.log("Actualizado: Provider");
         })
@@ -408,12 +425,12 @@ const AddElement = (props) => {
         });
 
       //update ElementsProviders
-      let JsonFormatElementsProvider = { elements: itemsProvider };
+      jsonFormatElementsProvider = { elements: itemsProvider };
 
       await props.firebase.db
         .collection("ElementsProviders")
         .doc(provider.nid_elements_provider)
-        .set(JsonFormatElementsProvider, { merge: true })
+        .set(jsonFormatElementsProvider, { merge: true })
         .then((success) => {
           console.log("Actualizado: ElementsProviders");
         });
@@ -445,7 +462,7 @@ const AddElement = (props) => {
       inventoryTemp = data.data();
     }
 
-    let jsonFormatAddElements = { elements: [] };
+    jsonFormatAddElements = { elements: [] };
     let idProvider = "";
     if (type === "factura") {
       idProvider = provider.id;
@@ -480,8 +497,8 @@ const AddElement = (props) => {
                 title,
               };
             }
-          }else{
-             newJsonElement = inventoryTemp.elements[i]
+          } else {
+            newJsonElement = inventoryTemp.elements[i];
           }
         }
         jsonFormatAddElements.elements.push(newJsonElement);
@@ -491,7 +508,7 @@ const AddElement = (props) => {
         let providers = [idProvider];
         let newJsonElement = {
           nid: items.data[i].nid,
-          quiantity: parseInt(items.data[i].quantity),
+          quantity: parseInt(items.data[i].quantity),
           providers,
           title: items.data[i].description,
         };
@@ -505,7 +522,10 @@ const AddElement = (props) => {
         .doc("6Ti3WLE0cav83i0rYozs")
         .set(jsonFormatAddElements, { merge: true })
         .then((success) => {
-          console.log("Actualizado: RawMaterial");
+          openMensajePantalla(dispatch, {
+            open: true,
+            mensaje: "Se guardaron los cambios",
+          });
         })
         .catch((error) => {
           console.log("Error:", error);
@@ -516,7 +536,10 @@ const AddElement = (props) => {
         .doc("6Ti3WLE0cav83i0rYozs")
         .set(jsonFormatAddElements, { merge: true })
         .then((success) => {
-          console.log("Actualizado: ToolsEquipment");
+          openMensajePantalla(dispatch, {
+            open: true,
+            mensaje: "Se guardaron los cambios",
+          });
         })
         .catch((error) => {
           console.log("Error:", error);
@@ -527,12 +550,66 @@ const AddElement = (props) => {
         .doc("TdxeXYYQKxGxfF3dQIUe")
         .set(jsonFormatAddElements, { merge: true })
         .then((success) => {
-          console.log("Actualizado: Supplies");
+          openMensajePantalla(dispatch, {
+            open: true,
+            mensaje: "Se guardaron los cambios",
+          });
         })
         .catch((error) => {
           console.log("Error:", error);
         });
     }
+
+    let jsonFormatModifyUser = {};
+
+    let today = new Date();
+    let dd = today.getDate();
+    let mm = today.getMonth() + 1;
+    let yyyy = today.getFullYear();
+    let date = `${dd}-${mm}-${yyyy}`;
+
+    if (type === "factura") {
+      jsonFormatModifyUser = {
+        user: sesion,
+        table: table,
+        date: date,
+        add_bill: jsonFormatBillBuy,
+        last_provider: provider,
+        modify_provider: jsonFormatProvider,
+        last_elements_provider: lastItemsProvider,
+        modify_elements_provider: jsonFormatElementsProvider,
+        add_elements_inventary: items,
+      };
+    } else {
+      jsonFormatModifyUser = {
+        user: sesion,
+        table: table,
+        date: date,
+        add_elements_inventary: items,
+      };
+    }
+
+    /*
+    await props.firebase.db
+        .collection("BullBuy")
+        .add(jsonFormatBillBuy)
+        .then((success) => {
+          idBill = success.id;
+        })
+        .catch((error) => {
+          console.log("error: ", error);
+        });
+*/
+
+    await props.firebase.db
+      .collection("ModifyUserInventory")
+      .add(jsonFormatModifyUser)
+      .then((success) => {
+        props.history.replace(`/inventarios/mostrar/${table}/search`);
+      })
+      .catch((error) => {
+        console.log("Error:", error);
+      });
   };
 
   return (
@@ -545,7 +622,6 @@ const AddElement = (props) => {
                 <HomeIcon />
                 Principal
               </Link>
-
               <Typography color="textPrimary">Inventario</Typography>
               <Typography color="textPrimary">Agregar</Typography>
               <Typography color="textPrimary">
@@ -941,7 +1017,7 @@ const AddElement = (props) => {
         </Paper>
       ) : (
         ""
-      )}
+      )}  
       <Paper style={style.paperForm}>
         <Grid container justify="center">
           <Grid item xs={12} sm={6}>

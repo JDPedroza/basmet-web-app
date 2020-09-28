@@ -65,7 +65,7 @@ class BarSesion extends Component {
     const { firebase } = this.state;
     const [{ sesion }, dispatch] = this.context;
     salirSesion(dispatch, firebase).then((success) => {
-      this.props.history.push("/auth/loginUsuario");
+      this.props.history.push("/iniciar_sesion");
     });
   };
 

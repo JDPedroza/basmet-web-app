@@ -1,5 +1,15 @@
 import React, { useEffect, useState, useCallback } from "react";
 
+//icons
+import EditIcon from "@material-ui/icons/Edit";
+import HomeIcon from "@material-ui/icons/Home";
+import KeyboardArrowDownIcon from "@material-ui/icons/KeyboardArrowDown";
+import KeyboardArrowUpIcon from "@material-ui/icons/KeyboardArrowUp";
+
+//utils
+import { consumerFirebase } from "../../server";
+import PropTypes from "prop-types";
+
 //diseño
 import {
   Container,
@@ -19,37 +29,27 @@ import {
   Collapse,
 } from "@material-ui/core";
 
-//icons
-import EditIcon from "@material-ui/icons/Edit";
-import HomeIcon from "@material-ui/icons/Home";
-import KeyboardArrowDownIcon from "@material-ui/icons/KeyboardArrowDown";
-import KeyboardArrowUpIcon from "@material-ui/icons/KeyboardArrowUp";
-
-//utils
-import { consumerFirebase } from "../../server";
-import PropTypes from "prop-types";
-
 const style = {
-  cardGrid: {
-    paddingTop: 8,
-    paddingBottom: 8,
-  },
-  paper: {
-    backgraundColor: "#f5f5ff",
-    padding: "20px",
-    minheight: 650,
-  },
-  form: {
-    padding: "20px",
-    marginTop: 2,
-  },
-  link: {
-    display: "flex",
-  },
-};
+    cardGrid: {
+      paddingTop: 8,
+      paddingBottom: 8,
+    },
+    paper: {
+      backgraundColor: "#f5f5ff",
+      padding: "20px",
+      minheight: 650,
+    },
+    form: {
+      padding: "20px",
+      marginTop: 2,
+    },
+    link: {
+      display: "flex",
+    },
+  };
 
 function Row(props) {
-  const { row, query, type } = props;
+  const { row, query } = props;
   const [open, setOpen] = React.useState(false);
 
   return (
@@ -87,30 +87,24 @@ function Row(props) {
           <Collapse in={open} timeout="auto" unmountOnExit>
             <Box margin={1}>
               <Typography variant="h6" gutterBottom component="div">
-                Ultima Compra
+                Puntos de operación
               </Typography>
               <Table size="small" aria-label="purchases">
                 <TableHead>
                   <TableRow>
-                    <TableCell>Numero Factura</TableCell>
-                    <TableCell>Fecha</TableCell>
-                    <TableCell>Numero Elementos</TableCell>
-                    <TableCell align="right">Sub Total</TableCell>
-                    <TableCell align="right">Total</TableCell>
+                    <TableCell>Dirección</TableCell>
+                    <TableCell>Ver en detalle</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {row.last_bill.map((last_bill) => (
-                    <TableRow key={last_bill.date}>
+                  {row.points_operation.map((point_operation) => (
+                    <TableRow key={point_operation.date}>
                       <TableCell component="th" scope="row">
-                        {last_bill.nid}
+                        {`${point_operation.address} - ${point_operation.city}, ${point_operation.country}`}
                       </TableCell>
                       <TableCell component="th" scope="row">
-                        {last_bill.date}
+                        {point_operation.id}
                       </TableCell>
-                      <TableCell>{last_bill.items}</TableCell>
-                      <TableCell align="right">{last_bill.sub_total}</TableCell>
-                      <TableCell align="right">{last_bill.total}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -132,43 +126,46 @@ Row.propTypes = {
     city: PropTypes.string.isRequired,
     phone: PropTypes.string.isRequired,
     email: PropTypes.string.isRequired,
-    last_bill: PropTypes.arrayOf(
+    points_operation: PropTypes.arrayOf(
       PropTypes.shape({
-        date: PropTypes.string.isRequired,
-        items: PropTypes.number.isRequired,
-        sub_total: PropTypes.number.isRequired,
-        total: PropTypes.number.isRequired,
+        id: PropTypes.string.isRequired,
+        address: PropTypes.string.isRequired,
+        city: PropTypes.string.isRequired,
+        country: PropTypes.string.isRequired,
+        phone: PropTypes.string.isRequired,
       })
     ).isRequired,
   }).isRequired,
 };
 
-const ListProviders = (props) => {
+const ListClients = (props) => {
   const { type, query } = props.match.params;
 
-  const [providers, setProviders] = useState([]);
+  const [clients, setClients] = useState([]);
 
   const fetchMyAPI = useCallback(async () => {
     let objectQuery;
 
     if (type === "all") {
-      objectQuery = props.firebase.db.collection("Providers").orderBy("nid");
+      objectQuery = props.firebase.db.collection("Clients").orderBy("nid");
     } else {
       objectQuery = props.firebase.db
-        .collection("Providers")
-        .where("type_provider", "==", type);
+        .collection("Clients")
+        .where("type_client", "==", type);
     }
 
-    let jsonFormatProvider = {
+    let jsonFormatClient = {
       id: "",
       type_document: "",
-      nid: 0,
+      nid: "",
       name: "",
-      address: "",
+      country: "",
       city: "",
-      phone: 0,
+      address: "",
       email: "",
-      last_bill: [],
+      phone: "",
+      points_operation: [],
+      keywords: [],
     };
 
     const snapshot = await objectQuery.get();
@@ -177,53 +174,62 @@ const ListProviders = (props) => {
       snapshot.docs.map(async (doc) => {
         let data = doc.data();
         let id = doc.id;
-        let jsonFormatLastBill = [
-          { nid:"No disponible", date: "01-01-2020", items: "0", sub_total: 0, total: 0 },
-        ];
+        let arrayPointsOperation = [];
+        let jsonFormatPointsOperation = {
+          id: "",
+          address: "No Asignado",
+          city: "",
+          country: "",
+          phone: "No ",
+        };
 
-        let snapshotLastBill = {};
-        if (data.last_bill !== "") {
-          snapshotLastBill = await props.firebase.db
-            .collection("BullBuy")
-            .doc(data.last_bill)
-            .get();
+        let snapshotPointsOperationClient = {};
+        if (data.points_operation !== "") {
+          for (let i = 0; i < data.points_operation.length; i++) {
+            snapshotPointsOperationClient = await props.firebase.db
+              .collection("PointsOperation")
+              .doc(data.points_operation[i])
+              .get();
 
-          let dataLastBill = snapshotLastBill.data();
+            let dataPointsOperationClient = snapshotPointsOperationClient.data();
 
-          jsonFormatLastBill = [
-            {
-              nid: dataLastBill.nid,
-              date: dataLastBill.date,
-              items: dataLastBill.items.length,
-              sub_total: dataLastBill.sub_total,
-              total: dataLastBill.total,
-            },
-          ];
+            jsonFormatPointsOperation = {
+              id: dataPointsOperationClient.id,
+              address: dataPointsOperationClient.nid,
+              city: dataPointsOperationClient.date,
+              country: dataPointsOperationClient.items.length,
+              phone: dataPointsOperationClient.sub_total,
+            };
+
+            arrayPointsOperation.push(jsonFormatPointsOperation);
+          }
+        } else {
+          arrayPointsOperation.push(jsonFormatPointsOperation);
         }
 
-        jsonFormatProvider = {
-          ...jsonFormatProvider,
+        jsonFormatClient = {
+          ...jsonFormatClient,
           id,
           type_document: data.type_document,
           nid: data.nid,
           name: data.business || data.contact_name,
           address: data.address,
           city: data.city,
+          country: data.countri,
           phone: data.phone || data.contact_phone,
           email: data.email || data.contact_email,
-          nid_last_bill: data.last_bill,
-          last_bill: jsonFormatLastBill,
+          points_operation: arrayPointsOperation,
         };
 
-        return jsonFormatProvider;
+        return jsonFormatClient;
       })
     );
 
-    setProviders(results);
-  }, [])
+    setClients(results);
+  }, []);
 
   useEffect(() => {
-    fetchMyAPI()
+    fetchMyAPI();
   }, [fetchMyAPI]);
 
   return (
@@ -258,15 +264,11 @@ const ListProviders = (props) => {
                 <TableCell>Dirección</TableCell>
                 <TableCell>Telefono</TableCell>
                 <TableCell>Correo</TableCell>
-                {query === "modify" ? (
-                  <TableCell/>
-                ) : (
-                  ""
-                )}
+                {query === "modify" ? <TableCell /> : ""}
               </TableRow>
             </TableHead>
             <TableBody>
-              {providers.map((row) => (
+              {clients.map((row) => (
                 <Row key={row.name} row={row} type={type} query={query} />
               ))}
             </TableBody>
@@ -277,4 +279,4 @@ const ListProviders = (props) => {
   );
 };
 
-export default consumerFirebase(ListProviders);
+export default consumerFirebase(ListClients);

@@ -5,7 +5,7 @@ import {Link} from 'react-router-dom'
 export const MenuIzquierda = ({ classes }) => (
   <div className={classes.list}>
     <List>
-      <ListItem component={Link} button to="/auth/editUsuario">
+      <ListItem component={Link} button to="/perfil/modify">
         <i className="material-icons">account_box</i>
         <ListItemText
           classes={{ primary: classes.listItemText }}
@@ -15,21 +15,7 @@ export const MenuIzquierda = ({ classes }) => (
     </List>
     <Divider />
     <List>
-      <ListItem component={Link} button to="/inmueble/nuevo">
-        <i className="material-icons">add_box</i>
-        <ListItemText
-          classes={{ primary: classes.listItemText }}
-          primary="Nuevo Inmueble"
-        />
-      </ListItem>
-      <ListItem component={Link} button to="">
-        <i className="material-icons">business</i>
-        <ListItemText
-          classes={{ primary: classes.listItemText }}
-          primary="Inmueble"
-        />
-      </ListItem>
-      <ListItem component={Link} button to="">
+      <ListItem component={Link} button to="/perfil/mensajes/see">
         <i className="material-icons">mail_outline</i>
         <ListItemText
           classes={{ primary: classes.listItemText }}

@@ -13,11 +13,13 @@ import {
   Select,
   MenuItem,
 } from "@material-ui/core";
-import { consumerFirebase } from "../../server";
+
+//utils
 import { crearKeyword } from "../../sesion/actions/keyWords";
 
-//temp
+//icons
 import HomeIcon from "@material-ui/icons/Home";
+import { consumerFirebase } from "../../server";
 
 const style = {
   paper: {
@@ -41,14 +43,14 @@ const style = {
   },
 };
 
-const ControlledOpenSelect = (props) => {
+const AddClient = (props) => {
   const [open, setOpen] = useState(false);
-  const { type } = props.match.params;
 
-  let [provider, changeDataProvider] = useState({
-    business: "",
+  let [client, changeDataClient] = useState({
+    type_client: "",
     type_document: "",
     nid: "",
+    name: "",
     country: "",
     city: "",
     address: "",
@@ -57,24 +59,23 @@ const ControlledOpenSelect = (props) => {
     contact_name: "",
     contact_email: "",
     contact_phone: "",
-    keywords: "",
-    type_provider: "",
-    last_bill: "",
-    nid_elements_provider: "",
+    points_operation: [],
+    keywords: [],
   });
 
   useEffect(() => {
     const { type } = props.match.params;
-    changeDataProvider((prev) => ({
-      ...prev,
-      type_provider: type,
-    }));
+
+    changeDataClient({
+      ...client,
+      type_client: type,
+    });
   }, []);
 
   const changeData = (e) => {
     const { name, value } = e.target;
 
-    changeDataProvider((prev) => ({
+    changeDataClient((prev) => ({
       ...prev,
       [name]: value,
     }));
@@ -91,53 +92,43 @@ const ControlledOpenSelect = (props) => {
   const saveDataFirebase = async (e) => {
     e.preventDefault();
 
-    const jsonFormatElementsProvider = { elements: [] };
-
-    let nidElementsProvider = "";
-
-    //generar la lista de elementsProvider
-    await props.firebase.db
-      .collection("ElementsProviders")
-      .add(jsonFormatElementsProvider)
-      .then((success) => {
-        nidElementsProvider = success.id;
-      });
-
-    provider.nid_elements_provider = nidElementsProvider;
 
     let textSearch = "";
 
-    if (provider.type_provider == "business") {
+    if (client.type_client == "business") {
       textSearch =
-        provider.business +
+        client.business +
         " " +
-        provider.type_document +
+        client.type_document +
         " " +
-        provider.nid +
+        client.nid +
         " " +
-        provider.type_provider;
+        client.type_client;
     } else {
       textSearch =
-        provider.contact_name +
+        client.contact_name +
         " " +
-        provider.type_document +
+        client.type_document +
         " " +
-        provider.nid +
+        client.nid +
         " " +
-        provider.type_provider;
+        client.type_client;
     }
 
-    provider.keywords = crearKeyword(textSearch);
+    client.keywords = crearKeyword(textSearch);
+    
+    console.log(client)
 
     props.firebase.db
-      .collection("Providers")
-      .add(provider)
+      .collection("Clients")
+      .add(client)
       .then((success) => {
         props.history.push("/home");
       })
       .catch((error) => {
         console.log("error: ", error);
       });
+
   };
 
   return (
@@ -150,19 +141,14 @@ const ControlledOpenSelect = (props) => {
                 <HomeIcon />
                 Principal
               </Link>
-              <Typography color="textPrimary">Proveedores</Typography>
+              <Typography color="textPrimary">Clientes</Typography>
               <Typography color="textPrimary">Agregar</Typography>
-              <Typography color="textPrimary">
-                {provider.type_provider === "business"
-                  ? "Empresa"
-                  : "Persona Natural"}
-              </Typography>
             </Breadcrumbs>
           </Grid>
         </Grid>
       </Paper>
       <Paper style={style.form}>
-        {provider.type_provider === "business" ? (
+        {client.type_client === "business" ? (
           <Grid container spacing={2} style={style.gridForm}>
             <Grid item xs={12} md={12}>
               <Typography color="textPrimary">Datos Empresa</Typography>
@@ -173,7 +159,7 @@ const ControlledOpenSelect = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Nombre"
-                value={provider.business}
+                value={client.business}
                 onChange={changeData}
               />
             </Grid>
@@ -189,7 +175,7 @@ const ControlledOpenSelect = (props) => {
                   open={open}
                   onClose={handleClose}
                   onOpen={handleOpen}
-                  value={provider.type_document}
+                  value={client.type_document}
                   onChange={changeData}
                   fullWidth
                 >
@@ -202,8 +188,8 @@ const ControlledOpenSelect = (props) => {
                 name="nid"
                 variant="outlined"
                 fullWidth
-                label={provider.type_document || "Tipo Identificación"}
-                value={provider.nid}
+                label={client.type_document || "Tipo Identificación"}
+                value={client.nid}
                 onChange={changeData}
               />
             </Grid>
@@ -213,7 +199,7 @@ const ControlledOpenSelect = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Pais"
-                value={provider.country}
+                value={client.country}
                 onChange={changeData}
               />
             </Grid>
@@ -223,7 +209,7 @@ const ControlledOpenSelect = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Ciudad"
-                value={provider.city}
+                value={client.city}
                 onChange={changeData}
               />
             </Grid>
@@ -233,7 +219,7 @@ const ControlledOpenSelect = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Dirección"
-                value={provider.address}
+                value={client.address}
                 onChange={changeData}
               />
             </Grid>
@@ -243,7 +229,7 @@ const ControlledOpenSelect = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Correo"
-                value={provider.email}
+                value={client.email}
                 onChange={changeData}
               />
             </Grid>
@@ -253,7 +239,7 @@ const ControlledOpenSelect = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Numero Telefono"
-                value={provider.phone}
+                value={client.phone}
                 onChange={changeData}
               />
             </Grid>
@@ -268,7 +254,7 @@ const ControlledOpenSelect = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Nombre"
-                value={provider.contact_name}
+                value={client.contact_name}
                 onChange={changeData}
               />
             </Grid>
@@ -278,7 +264,7 @@ const ControlledOpenSelect = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Correo"
-                value={provider.contact_email}
+                value={client.contact_email}
                 onChange={changeData}
               />
             </Grid>
@@ -288,7 +274,7 @@ const ControlledOpenSelect = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Numero Telefono"
-                value={provider.contact_phone}
+                value={client.contact_phone}
                 onChange={changeData}
               />
             </Grid>
@@ -304,7 +290,7 @@ const ControlledOpenSelect = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Nombre"
-                value={provider.contact_name}
+                value={client.contact_name}
                 onChange={changeData}
               />
             </Grid>
@@ -320,7 +306,7 @@ const ControlledOpenSelect = (props) => {
                   open={open}
                   onClose={handleClose}
                   onOpen={handleOpen}
-                  value={provider.type_document}
+                  value={client.type_document}
                   onChange={changeData}
                   fullWidth
                 >
@@ -340,8 +326,8 @@ const ControlledOpenSelect = (props) => {
                 name="nid"
                 variant="outlined"
                 fullWidth
-                label={provider.type_document || "Tipo Identificación"}
-                value={provider.nid}
+                label={client.type_document || "Tipo Identificación"}
+                value={client.nid}
                 onChange={changeData}
               />
             </Grid>
@@ -351,7 +337,7 @@ const ControlledOpenSelect = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Pais"
-                value={provider.country}
+                value={client.country}
                 onChange={changeData}
               />
             </Grid>
@@ -361,7 +347,7 @@ const ControlledOpenSelect = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Ciudad"
-                value={provider.city}
+                value={client.city}
                 onChange={changeData}
               />
             </Grid>
@@ -371,7 +357,7 @@ const ControlledOpenSelect = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Dirección"
-                value={provider.address}
+                value={client.address}
                 onChange={changeData}
               />
             </Grid>
@@ -381,7 +367,7 @@ const ControlledOpenSelect = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Correo"
-                value={provider.contact_email}
+                value={client.contact_email}
                 onChange={changeData}
               />
             </Grid>
@@ -391,7 +377,7 @@ const ControlledOpenSelect = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Numero Telefono"
-                value={provider.contact_phone}
+                value={client.contact_phone}
                 onChange={changeData}
               />
             </Grid>
@@ -419,4 +405,4 @@ const ControlledOpenSelect = (props) => {
   );
 };
 
-export default consumerFirebase(ControlledOpenSelect);
+export default consumerFirebase(AddClient);
