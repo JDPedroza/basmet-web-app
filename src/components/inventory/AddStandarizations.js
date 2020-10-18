@@ -112,8 +112,8 @@ const AddStandarizations = (props) => {
     //getDataRawMaterials
     let itemsRawMaterials = [];
     let getDataRawMaterials = await props.firebase.db
-      .collection("RawMaterial")
-      .doc("6Ti3WLE0cav83i0rYozs")
+      .collection("Inventories")
+      .doc("RawMaterials")
       .get();
     let dataRawMaterials = getDataRawMaterials.data();
 
@@ -131,8 +131,8 @@ const AddStandarizations = (props) => {
     //getDataSupplies
     let itemsSupplies = [];
     let getDataSupplies = await props.firebase.db
-      .collection("Supplies")
-      .doc("TdxeXYYQKxGxfF3dQIUe")
+      .collection("Inventories")
+      .doc("Supplies")
       .get();
     let dataSupplies = getDataSupplies.data();
 

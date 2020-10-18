@@ -6,6 +6,7 @@ import {
   Avatar,
   Grid,
   Button,
+  Paper,
 } from "@material-ui/core";
 import LockoutLineIcon from "@material-ui/icons/LockOutlined";
 import { compose } from "recompose";
@@ -15,15 +16,20 @@ import { StateContext } from "../../sesion/store";
 import { openMensajePantalla } from "../../sesion/actions/snackBarAction";
 
 const style = {
+  container: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    height: "100vh",
+  },
   paper: {
-    marginTop: 8,
     display: "flex",
     flexDirection: "column",
-    alingItems: "center",
+    alignItems: "center",
+    padding: "20px",
   },
   avatar: {
     margin: 8,
-    backgroundColor: "#E53935",
   },
   from: {
     width: "100%",
@@ -43,7 +49,6 @@ const usuarioInicial = {
 };
 
 class RegistrarUsuario extends Component {
-
   static contextType = StateContext;
 
   state = {
@@ -74,7 +79,7 @@ class RegistrarUsuario extends Component {
     });
   };
 
-  registrarUser = async e => {
+  registrarUser = async (e) => {
     e.preventDefault();
     const [{ sesion }, dispatch] = this.context;
     const { firebase, usuario } = this.state;
@@ -84,77 +89,79 @@ class RegistrarUsuario extends Component {
     } else {
       openMensajePantalla(dispatch, {
         open: true,
-        mensaje: callback.mensaje.message
-      })
+        mensaje: callback.mensaje.message,
+      });
     }
   };
 
   render() {
     return (
       <Container maxWidth="md">
-        <div style={style.paper}>
-          <Avatar style={style.avatar}>
-            <LockoutLineIcon />
-          </Avatar>
-          <Typography component="h1" variant="h5">
-            Registre su cuenta
-          </Typography>
-          <form style={style.from}>
-            <Grid container spacing={2}>
-              <Grid item md={6} xs={12}>
-                <TextField
-                  name="nombre"
-                  onChange={this.onChange}
-                  value={this.state.usuario.nombre}
-                  fullWidth
-                  label="Ingrese sus nombres"
-                />
+        <div style={style.container}>
+          <Paper style={style.paper}>
+            <Avatar style={style.avatar}>
+              <LockoutLineIcon />
+            </Avatar>
+            <Typography component="h1" variant="h5">
+              Registre su cuenta
+            </Typography>
+            <form style={style.from}>
+              <Grid container spacing={2}>
+                <Grid item md={6} xs={12}>
+                  <TextField
+                    name="nombre"
+                    onChange={this.onChange}
+                    value={this.state.usuario.nombre}
+                    fullWidth
+                    label="Ingrese sus nombres"
+                  />
+                </Grid>
+                <Grid item md={6} xs={12}>
+                  <TextField
+                    name="apellido"
+                    onChange={this.onChange}
+                    value={this.state.usuario.apellido}
+                    fullWidth
+                    label="Ingrese sus apellidos"
+                  />
+                </Grid>
+                <Grid item md={6} xs={12}>
+                  <TextField
+                    name="email"
+                    onChange={this.onChange}
+                    value={this.state.usuario.email}
+                    fullWidth
+                    label="Ingrese sus e-mail"
+                  />
+                </Grid>
+                <Grid item md={6} xs={12}>
+                  <TextField
+                    type="password"
+                    onChange={this.onChange}
+                    value={this.state.usuario.password}
+                    name="password"
+                    fullWidth
+                    label="Ingrese sus contraseña"
+                  />
+                </Grid>
               </Grid>
-              <Grid item md={6} xs={12}>
-                <TextField
-                  name="apellido"
-                  onChange={this.onChange}
-                  value={this.state.usuario.apellido}
-                  fullWidth
-                  label="Ingrese sus apellidos"
-                />
+              <Grid container justify="center">
+                <Grid item md={6} xs={12}>
+                  <Button
+                    type="submit"
+                    onClick={this.registrarUser}
+                    variant="contained"
+                    fullWidth
+                    size="large"
+                    color="primary"
+                    style={style.submit}
+                  >
+                    Registrar
+                  </Button>
+                </Grid>
               </Grid>
-              <Grid item md={6} xs={12}>
-                <TextField
-                  name="email"
-                  onChange={this.onChange}
-                  value={this.state.usuario.email}
-                  fullWidth
-                  label="Ingrese sus e-mail"
-                />
-              </Grid>
-              <Grid item md={6} xs={12}>
-                <TextField
-                  type="password"
-                  onChange={this.onChange}
-                  value={this.state.usuario.password}
-                  name="password"
-                  fullWidth
-                  label="Ingrese sus contraseña"
-                />
-              </Grid>
-            </Grid>
-            <Grid container justify="center">
-              <Grid item md={6} xs={12}>
-                <Button
-                  type="submit"
-                  onClick={this.registrarUser}
-                  variant="contained"
-                  fullWidth
-                  size="large"
-                  color="primary"
-                  style={style.submit}
-                >
-                  Registrar
-                </Button>
-              </Grid>
-            </Grid>
-          </form>
+            </form>
+          </Paper>
         </div>
       </Container>
     );

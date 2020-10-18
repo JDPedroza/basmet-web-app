@@ -17,13 +17,16 @@ import {
 } from "@material-ui/core";
 
 //utils
-import React, { useState, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
+import { consumerFirebase } from "../../server";
 
 //icons
 import HomeIcon from "@material-ui/icons/Home";
 import KeyboardArrowDownIcon from "@material-ui/icons/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@material-ui/icons/KeyboardArrowUp";
+import VisibilityIcon from "@material-ui/icons/Visibility";
+import EditIcon from '@material-ui/icons/Edit';
 
 const style = {
   paper: {
@@ -48,7 +51,7 @@ const style = {
 };
 
 function Row(props) {
-  const { row, query } = props;
+  const { row, query, table } = props;
   const [open, setOpen] = React.useState(false);
 
   return (
@@ -65,6 +68,18 @@ function Row(props) {
         </TableCell>
         <TableCell align="left">{row.title}</TableCell>
         <TableCell align="right">{row.quantity}</TableCell>
+        {query === "modify" ? (
+          <TableCell>
+            <IconButton
+              aria-label="Editar Elemento"
+              href={`/inventarios/editar/${table}/${row.nid}`}
+            >
+              <EditIcon />
+            </IconButton>
+          </TableCell>
+        ) : (
+          ""
+        )}
       </TableRow>
       <TableRow key={`${row.title}_last_modify`}>
         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={12}>
@@ -78,16 +93,24 @@ function Row(props) {
                   <TableRow key={`${row.title}_titles_last_modify`}>
                     <TableCell>Tipo</TableCell>
                     <TableCell>Fecha</TableCell>
-                    <TableCell>Cantidad</TableCell>
-                    <TableCell>Reporte</TableCell>
+                    <TableCell>Usuario</TableCell>
+                    <TableCell />
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {row.last_modify.map((data) => (
                     <TableRow key={`${row.title}_data_last_modify`}>
                       <TableCell>{data.type}</TableCell>
-                      <TableCell>{data.quantity}</TableCell>
-                      <TableCell>{data.report}</TableCell>
+                      <TableCell>{data.date}</TableCell>
+                      <TableCell>{data.user}</TableCell>
+                      <TableCell>
+                        <IconButton
+                          aria-label="Ver Reporte"
+                          href={`/reportes/mostrar/${data.nid}`}
+                        >
+                          <VisibilityIcon />
+                        </IconButton>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -106,10 +129,11 @@ function Row(props) {
               <Table size="small" aria-label="purchases">
                 <TableHead>
                   <TableRow key={`${row.title}_titles_providers`}>
-                    <TableCell>Numero de Identificacion</TableCell>
+                    <TableCell>#</TableCell>
                     <TableCell>Nombre</TableCell>
-                    <TableCell>Numero de Contacto</TableCell>
+                    <TableCell>Telefono</TableCell>
                     <TableCell>Correo</TableCell>
+                    <TableCell />
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -119,6 +143,47 @@ function Row(props) {
                       <TableCell>{provider.name}</TableCell>
                       <TableCell>{provider.phone}</TableCell>
                       <TableCell>{provider.email}</TableCell>
+                      <TableCell align="right">
+                        <IconButton
+                          aria-label="Ver proveedor"
+                          href={`/proveedor/editar/${provider.id}`}
+                        >
+                          <VisibilityIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Box>
+          </Collapse>
+        </TableCell>
+      </TableRow>
+      <TableRow key={`${row.title}_providers`}>
+        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={12}>
+          <Collapse in={open} timeout="auto" unmountOnExit>
+            <Box margin={1}>
+              <Typography variant="h6" gutterBottom component="div">
+                Distribución de elementos
+              </Typography>
+              <Table size="small" aria-label="purchases">
+                <TableHead>
+                  <TableRow key={`${row.title}_titles_distributions`}>
+                    <TableCell style={{ width: "70%" }}>
+                      Punto de operación
+                    </TableCell>
+                    <TableCell style={{ width: "30%" }} align="right">
+                      Cantidad
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {row.distributions.map((distribution) => (
+                    <TableRow key={`${row.title}_data_distributions`}>
+                      <TableCell>{distribution.name}</TableCell>
+                      <TableCell align="right">
+                        {distribution.quantity}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -133,12 +198,12 @@ function Row(props) {
 
 Row.propTypes = {
   row: PropTypes.shape({
+    nid: PropTypes.string.isRequired,
     title: PropTypes.string.isRequired,
     quantity: PropTypes.string.isRequired,
     last_modify: PropTypes.arrayOf(
       PropTypes.shape({
         type: PropTypes.string.isRequired,
-        quantity: PropTypes.number.isRequired,
         date: PropTypes.string.isRequired,
         report: PropTypes.string.isRequired,
       })
@@ -151,126 +216,118 @@ Row.propTypes = {
         email: PropTypes.string.isRequired,
       })
     ).isRequired,
+    distributions: PropTypes.arrayOf(
+      PropTypes.shape({
+        name: PropTypes.string.isRequired,
+        quantity: PropTypes.string.isRequired,
+      })
+    ).isRequired,
   }).isRequired,
 };
 
 const ListElements = (props) => {
   const { table, query } = props.match.params;
-  let jsonFormatLastModify = [
-    {
-      type: "Agregar - Compra",
-      quantity: 100,
-      date: "01-01-2020",
-      report: "0",
-    },
-  ];
-  let jsonFormatProviders = [
-    {
-      nid: "4080408-8",
-      name: "Ingacoples",
-      phone: "3133413120",
-      email: "ingacoples@gmail.com",
-    },
-  ];
-  const [elements, setElements] = useState([
-    {
-      title: "Prueba Interna",
-      quantity: "1000",
-      last_modify: jsonFormatLastModify,
-      providers: jsonFormatProviders,
-    },
-  ]);
+
+  const [dataElements, setDataElements] = useState([]);
 
   const fetchMyAPI = useCallback(async () => {
-    let objectQuery;
+    let doc = "";
 
     if (table === "materia_prima") {
-      objectQuery = props.firebase.db
-        .collection("RawMaterials")
-        .doc("6Ti3WLE0cav83i0rYozs");
+      doc = "RawMaterials";
     } else if (table === "herramientas_y_equipos") {
-      objectQuery = props.firebase.db
-        .collection("ToolsEquipment")
-        .doc("FV7JGTCXeZHBBNOMX7IZ");
+      doc = "ToolsEquipment";
     } else if (table === "insumos") {
-      objectQuery = props.firebase.db
-        .collection("Supplies")
-        .doc("TdxeXYYQKxGxfF3dQIUe");
+      doc = "Supplies";
     } else if (table === "productos_en_proceso") {
-      objectQuery = props.firebase.db
-        .collection("ItemsProcess")
-        .doc("dgjOVvXSWgYFDFtam24b");
+      doc = "ItemsProcess";
     } else if (table === "productos_en_embalaje") {
-      objectQuery = props.firebase.db
-        .collection("ItemsPackaging")
-        .doc("oEIoAzurdqPFJviRJBlx");
+      doc = "ItemsPackaging";
+    } else if (table === "implementos"){
+      doc = "Implements"
     }
 
-    let jsonFormatElements = [];
+    const data = await props.firebase.db
+      .collection("Inventories")
+      .doc(doc)
+      .get();
 
-    const snapshot = await objectQuery.get();
+    let dataElements = data.data();
 
     let results = await Promise.all(
-      snapshot.docs.map(async (doc) => {
-        let data = doc.data();
-        let id = doc.id;
-        let jsonFormatLastBill = [
+      dataElements.elements.map(async (element) => {
+        console.log(element);
+
+        let jsonFormatElements = {
+          nid: element.nid,
+          title: element.title,
+          quantity: element.quantity,
+          last_modify: [],
+          providers: [],
+          distributions: element.distributions,
+        };
+
+        //generamos el array con los datos de last_modify
+        let snapshotLastModify = await props.firebase.db
+          .collection("Reports")
+          .doc(element.last_modify)
+          .get();
+
+        let dataLastModify = snapshotLastModify.data();
+
+        //lo agregamos al array
+        let arrayLastModify = [
           {
-            nid: "No disponible",
-            date: "01-01-2020",
-            items: "0",
-            sub_total: 0,
-            total: 0,
+            nid: element.last_modify,
+            type: dataLastModify.type,
+            date: dataLastModify.date,
+            user: `${dataLastModify.user.nombre} ${dataLastModify.user.apellido}`,
           },
         ];
+        jsonFormatElements.last_modify = arrayLastModify;
 
-        let snapshotLastBill = {};
-        if (data.last_bill !== "") {
-          snapshotLastBill = await props.firebase.db
-            .collection("BullBuy")
-            .doc(data.last_bill)
-            .get();
-
-          let dataLastBill = snapshotLastBill.data();
-
-          jsonFormatLastBill = [
-            {
-              nid: dataLastBill.nid,
-              date: dataLastBill.date,
-              items: dataLastBill.items.length,
-              sub_total: dataLastBill.sub_total,
-              total: dataLastBill.total,
-            },
-          ];
+        //generamos el array con los datos de los proveedores:
+        if (element.providers.length !== 0) {
         }
+        let arrayProviders = await Promise.all(
+          element.providers.map(async (provider) => {
+            let snapshotProviders = await props.firebase.db
+              .collection("Providers")
+              .doc(provider)
+              .get();
 
-        jsonFormatElements = {
-          ...jsonFormatElements,
-          id,
-          type_document: data.type_document,
-          nid: data.nid,
-          name: data.business || data.contact_name,
-          address: data.address,
-          city: data.city,
-          phone: data.phone || data.contact_phone,
-          email: data.email || data.contact_email,
-          nid_last_bill: data.last_bill,
-          last_bill: jsonFormatLastBill,
-        };
+            let dataProvider = snapshotProviders.data();
+
+            //agregamos el json al array
+            return {
+              id: provider,
+              nid: dataProvider.nid,
+              name: dataProvider.business || dataProvider.contact_name,
+              phone: dataProvider.phone || dataProvider.contact_phone,
+              email: dataProvider.email || dataProvider.contact_email,
+            };
+          })
+        );
+
+        jsonFormatElements.providers = arrayProviders;
 
         return jsonFormatElements;
       })
     );
 
-    //setProviders(results);
+    setDataElements(results);
   }, []);
+
+  useEffect(() => {
+    fetchMyAPI();
+  }, [fetchMyAPI]);
 
   return (
     <Container component="main" maxWidth="md" justify="center">
       <Paper style={style.paper}>
         <Grid item xs={12} sm={12}>
           <Breadcrumbs aria-label="breadcrumbs">
-            <Link color="inherit" style={style.link} href="/home">
+            <Link color="inherit" style={style.link} href="/">
               <HomeIcon />
               Principal
             </Link>
@@ -291,14 +348,19 @@ const ListElements = (props) => {
           <Table aria-label="collapsible table">
             <TableHead>
               <TableRow>
-                <TableCell style={{width:"5%"}}></TableCell>
-                <TableCell style={{width:"70%"}} align="left">Descripción</TableCell>
-                <TableCell style={{width:"25%"}} align="right">Cantidad Stock</TableCell>
+                <TableCell style={{ width: "5%" }}></TableCell>
+                <TableCell style={{ width: "70%" }} align="left">
+                  Descripción
+                </TableCell>
+                <TableCell style={{ width: "25%" }} align="right">
+                  Cantidad Stock
+                </TableCell>
+                {query === "modify" ? <TableCell /> : ""}
               </TableRow>
             </TableHead>
             <TableBody>
-              {elements.map((row) => (
-                <Row key={row.title} row={row} query={query} />
+              {dataElements.map((row) => (
+                <Row key={row.title} row={row} query={query} table={table} />
               ))}
             </TableBody>
           </Table>
@@ -308,4 +370,4 @@ const ListElements = (props) => {
   );
 };
 
-export default ListElements;
+export default consumerFirebase(ListElements);

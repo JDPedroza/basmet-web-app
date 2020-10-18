@@ -68,7 +68,7 @@ function Page404() {
         </div>
       </div>
       <Typography align="center">
-          <Link href={sesion === undefined ? "/iniciar_sesion" : "/home"}>{sesion === undefined ? "VE A INICIAR SESIÓN" : "VE A PRINCIPAL"}</Link>
+          <Link href={sesion === undefined ? "/iniciar_sesion" : "/"}>{sesion === undefined ? "VE A INICIAR SESIÓN" : "VE A PRINCIPAL"}</Link>
         </Typography>
     </Container>
   );

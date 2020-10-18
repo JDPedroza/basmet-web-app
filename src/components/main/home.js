@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import imgGuide from "./images/Guia.jpg";
 import iconInventario from "./images/icon_inventario.png";
-import iconProcess from "./images/icon_process.png"
-import iconClients from "./images/icon_clients.png"
+import iconProcess from "./images/icon_process.png";
+import iconClients from "./images/icon_clients.png";
 import iconPuntoOperacion from "./images/icon_puntosOperacion.png";
 import iconEmpleado from "./images/icon_empleado.png";
 import iconTraslados from "./images/icon_translados.png";
@@ -269,6 +269,20 @@ const Home = (props) => {
               ) : (
                 ""
               )}
+              <ItemOptions
+                title="Implementos"
+                onclick={
+                  stateModules.moduleI.query === "add"
+                    ? () =>
+                        moduleSelected("moduleI", 4, stateModules.moduleI.face)
+                    : ""
+                }
+                href={
+                  stateModules.moduleI.query !== "add"
+                    ? `/inventarios/mostrar/implementos/${stateModules.moduleI.query}`
+                    : ""
+                }
+              />
             </Grid>
           </div>
           <div class="lado abajo">
@@ -280,7 +294,9 @@ const Home = (props) => {
                     ? "materia_prima"
                     : stateModules.moduleI.option === 2
                     ? "herramientas_y_equipos"
-                    : "insumos"
+                    : stateModules.moduleI.option === 3
+                    ? "insumos"
+                    : "implementos"
                 }/factura`}
               />
               <ItemOptions
@@ -290,7 +306,9 @@ const Home = (props) => {
                     ? "materia_prima"
                     : stateModules.moduleI.option === 2
                     ? "herramientas_y_equipos"
-                    : "insumos"
+                    : stateModules.moduleI.option === 3
+                    ? "insumos"
+                    : "implementos"
                 }/independiente`}
               />
             </Grid>
@@ -481,14 +499,40 @@ const Home = (props) => {
             <h1>EMPLEADOS</h1>
           </div>
           <div id="mEar" class="lado arriba">
-            <div class="optionsE optionsELar" id="eEmpleado">
-              <p>Empleado</p>
-            </div>
-            <div class="optionsE optionsELar" id="eInsumos">
-              <p>Insumos</p>
-            </div>
+            <Grid container style={style.gridContainer}>
+              <ItemOptions
+                title="Agregar Empleado"
+                href="/empleados/add"
+              />
+              <ItemOptions
+                title="Consultar Empleado"
+                href="/empleados/mostrar/search"
+              />
+              <ItemOptions
+                title="Modificar Empleado"
+                onclick={() =>
+                  moduleSelected(
+                    "moduleE",
+                    3,
+                    stateModules.moduleE.face,
+                    "modify"
+                  )
+                }
+              />
+            </Grid>
           </div>
-          <div id="mIat" class="lado atras"></div>
+          <div id="mIat" class="lado atras">
+            <Grid container style={style.gridContainer}>
+              <ItemOptions
+                title="Datos"
+                href="/empleados/mostrar/modify/data"
+              />
+              <ItemOptions
+                title="Asignaciones"
+                href="/empleados/mostrar/modify/assignment"
+              />
+            </Grid>
+          </div>
           <div id="mIab" class="lado abajo"></div>
         </div>
       </div>

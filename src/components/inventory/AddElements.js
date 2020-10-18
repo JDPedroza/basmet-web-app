@@ -27,7 +27,6 @@ import {
 import Autocomplete, {
   createFilterOptions,
 } from "@material-ui/lab/Autocomplete";
-import { consumerFirebase } from "../../server";
 import {
   MuiPickersUtilsProvider,
   KeyboardDatePicker,
@@ -38,6 +37,7 @@ import { useStateValue } from "../../sesion/store";
 import MomentUtils from "@date-io/moment";
 import { v4 as uuidv4 } from "uuid";
 import { openMensajePantalla } from "../../sesion/actions/snackBarAction";
+import { consumerFirebase } from "../../server";
 
 //icons
 import HomeIcon from "@material-ui/icons/Home";
@@ -80,15 +80,12 @@ const AddElement = (props) => {
     { title: "", nid: "" },
   ]);
   const [itemsProvider, setItemsProvider] = useState([{ title: "", nid: "" }]);
+  const [itemsAvaibles, setItemsAvaibles] = useState([{ title: "", nid: "" }]);
 
   let [providers, setDataProviders] = useState({
     bill: false,
     data: [],
   });
-
-  let [pointsOperation, seDataPointsOperation] =  useState({
-    data: []
-  })
 
   let [provider, setDataProvider] = useState({
     id: 0,
@@ -139,8 +136,9 @@ const AddElement = (props) => {
 
   const [value, setValue] = useState([{ title: "" }]);
 
-  const fetchMyAPI = useCallback(async () => {
+  const [divider, setDivider] = useState(null);
 
+  const fetchMyAPI = useCallback(async () => {
     if (type === "factura") {
       let objectQuery = props.firebase.db
         .collection("Providers")
@@ -160,27 +158,25 @@ const AddElement = (props) => {
         data: arrayProviders,
       }));
     } else {
+      let doc = "";
       let dataInventory = {};
       let itemsInventory = [];
       if (table === "materia_prima") {
-        let data = await props.firebase.db
-          .collection("RawMaterial")
-          .doc("6Ti3WLE0cav83i0rYozs")
-          .get();
-        dataInventory = data.data();
+        doc = "RawMaterials";
       } else if (table === "herramientas_y_equipos") {
-        let data = await props.firebase.db
-          .collection("ToolsEquipment")
-          .doc("FV7JGTCXeZHBBNOMX7IZ")
-          .get();
-        dataInventory = data.data();
+        doc = "ToolsEquipment";
+      } else if (table === "supplies") {
+        doc = "Supplies";
       } else {
-        let data = await props.firebase.db
-          .collection("Supplies")
-          .doc("TdxeXYYQKxGxfF3dQIUe")
-          .get();
-        dataInventory = data.data();
+        doc = "Implements";
       }
+
+      let data = await props.firebase.db
+        .collection("Inventories")
+        .doc(doc)
+        .get();
+
+      dataInventory = data.data();
 
       for (let i = 0; i < dataInventory.elements.length; i++) {
         let jsonFormatElements = {
@@ -189,10 +185,8 @@ const AddElement = (props) => {
         };
         itemsInventory.push(jsonFormatElements);
       }
-      setItemsProvider(itemsInventory);
+      setItemsAvaibles(itemsInventory);
     }
-
-
   }, []);
 
   useEffect(() => {
@@ -279,10 +273,61 @@ const AddElement = (props) => {
       .get();
 
     let elementsProvider = data.data();
-    let itemsProvider = elementsProvider.elements;
+    setItemsProvider(elementsProvider.elements);
 
-    setLastItemsProvider(itemsProvider);
-    setItemsProvider(itemsProvider);
+    let itemsAvaibles = [
+      {
+        title: `Elementos de ${provider.business || provider.contact_name}`,
+        nid: "0",
+      },
+    ];
+
+    //creamos las opciones del proveedor
+    for (let i = 0; i < elementsProvider.elements.length; i++) {
+      itemsAvaibles.push(elementsProvider.elements[i]);
+    }
+
+    let doc = "";
+
+    if (table === "materia_prima") {
+      doc = "RawMaterials";
+    } else if (table === "herramientas_y_equipos") {
+      doc = "ToolsEquipment";
+    } else if (table === "supplies") {
+      doc = "Supplies";
+    } else {
+      doc = "Implements";
+    }
+
+    itemsAvaibles.push({ title: "Otros elementos del inventario", nid: 1 });
+    setDivider(itemsAvaibles.length - 1);
+
+    let snapshotDataElementsInventory = await props.firebase.db
+      .collection("Inventories")
+      .doc(doc)
+      .get();
+
+    let dataElementsInventory = snapshotDataElementsInventory.data();
+
+    //creamos el resto de opciones
+    let tempLength = itemsAvaibles.length;
+    for (let j = 0; j < dataElementsInventory.elements.length; j++) {
+      let found = false;
+      for (let k = 0; k < tempLength; k++) {
+        if (dataElementsInventory.elements[j].nid === itemsAvaibles[k].nid) {
+          found = true;
+        }
+      }
+      if (!found) {
+        itemsAvaibles.push({
+          title: dataElementsInventory.elements[j].title,
+          nid: dataElementsInventory.elements[j].nid,
+        });
+      }
+    }
+
+    setLastItemsProvider(elementsProvider.elements);
+    setItemsAvaibles(itemsAvaibles);
   };
 
   const changeDataBill = (e) => {
@@ -353,7 +398,20 @@ const AddElement = (props) => {
     let jsonFormatBillBuy = {};
     let jsonFormatProvider = {};
     let jsonFormatElementsProvider = {};
-    let jsonFormatAddElements = {};
+    let jsonFormatAddElements = { elements: [] };
+
+    let today = new Date();
+    let dd = today.getDate();
+    let mm = today.getMonth() + 1;
+    let yyyy = today.getFullYear();
+    let date = `${dd}-${mm}-${yyyy}`;
+
+    let jsonFormatReport = {
+      user: sesion.usuario,
+      date,
+      type: "Agregar Elementos (Factura)",
+      data: {},
+    };
 
     if (type === "factura") {
       //add BillBuy
@@ -394,7 +452,7 @@ const AddElement = (props) => {
       let idBill = "";
 
       await props.firebase.db
-        .collection("BullBuy")
+        .collection("BillBuy")
         .add(jsonFormatBillBuy)
         .then((success) => {
           idBill = success.id;
@@ -425,6 +483,21 @@ const AddElement = (props) => {
         });
 
       //update ElementsProviders
+      let tempItemsProviderLength = itemsProvider.length;
+      for (let x = 0; x < items.data.length; x++) {
+        let found = false;
+        for (let y = 0; y < tempItemsProviderLength; y++) {
+          if (items.data[x].nid === itemsProvider[y].nid) {
+            found = true;
+          }
+        }
+        if (!found) {
+          itemsProvider.push({
+            title: items.data[x].description,
+            nid: items.data[x].nid,
+          });
+        }
+      }
       jsonFormatElementsProvider = { elements: itemsProvider };
 
       await props.firebase.db
@@ -434,143 +507,195 @@ const AddElement = (props) => {
         .then((success) => {
           console.log("Actualizado: ElementsProviders");
         });
+
+      jsonFormatReport = {
+        ...jsonFormatReport,
+        data: { items: items.data, nid_bill_buy: idBill },
+      };
+    } else {
+      jsonFormatReport = {
+        ...jsonFormatReport,
+        type: "Agregar Elementos (Independiente)",
+        data: { items: items.data },
+      };
     }
+
+    //saveReport
+    let idReport = "";
+
+    await props.firebase.db
+      .collection("Reports")
+      .add(jsonFormatReport)
+      .then((success) => {
+        idReport = success.id;
+      })
+      .catch((error) => {
+        console.log("error: ", error);
+      });
 
     //update Inventorys
     let inventoryTemp = null;
+    let doc = "";
 
     if (table === "materia_prima") {
-      let data = await props.firebase.db
-        .collection("RawMaterial")
-        .doc("6Ti3WLE0cav83i0rYozs")
-        .get();
-
-      inventoryTemp = data.data();
+      doc = "RawMaterials";
     } else if (table === "herramientas_y_equipos") {
-      let data = await props.firebase.db
-        .collection("ToolsEquipment")
-        .doc("FV7JGTCXeZHBBNOMX7IZ")
-        .get();
-
-      inventoryTemp = data.data();
+      doc = "ToolsEquipment";
+    } else if (table === "supplies") {
+      doc = "Supplies";
     } else {
-      let data = await props.firebase.db
-        .collection("Supplies")
-        .doc("TdxeXYYQKxGxfF3dQIUe")
-        .get();
-
-      inventoryTemp = data.data();
+      doc = "Implements";
     }
 
-    jsonFormatAddElements = { elements: [] };
-    let idProvider = "";
+    let data = await props.firebase.db.collection("Inventories").doc(doc).get();
+
+    inventoryTemp = data.data();
+
+    let idProvider = null;
+    console.log(provider);
     if (type === "factura") {
       idProvider = provider.id;
     }
 
+    let newArrayElementsPointOperation = [];
+    let endArrayInventory = [];
+
     if (inventoryTemp.elements.length !== 0) {
       for (let i = 0; i < inventoryTemp.elements.length; i++) {
-        let newJsonElement = {};
+        let jsonFormatElement = null;
+        let found = false;
         for (let j = 0; j < items.data.length; j++) {
           if (inventoryTemp.elements[i].nid === items.data[j].nid) {
+            //sumamos los nuevos elementos con los anteriormente guardados en la db y generamos el formato
             let quantity =
               parseInt(inventoryTemp.elements[i].quantity) +
               parseInt(items.data[j].quantity);
             let providers = inventoryTemp.elements[i].providers;
             let title = items.data[j].description;
-            const provider = providers.find(
+            let distributions = inventoryTemp.elements[i].distributions;
+            let last_modify = idReport;
+            console.log("array provider last:", providers);
+            const provider = providers.includes(
               (element) => element === idProvider
             );
-            if (provider === "undefined") {
+            console.log("busqueda de provider", provider);
+            if (!provider && type === "factura") {
+              console.log("asignado");
               providers.push(idProvider);
-              newJsonElement = {
+            }
+            console.log("nid Provider new", idProvider);
+            console.log("array provider last:", providers);
+            jsonFormatElement = {
+              nid: inventoryTemp.elements[i].nid,
+              quantity,
+              providers,
+              title,
+              distributions,
+              last_modify,
+            };
+            found = true;
+          } else {
+            //agregar el elemento que ya existia en la db
+            if (j === items.data.length - 1 && !found) {
+              let providers = [];
+              if (idProvider !== null) {
+                providers = [idProvider];
+              }
+              jsonFormatElement = {
                 nid: inventoryTemp.elements[i].nid,
-                quantity,
-                providers,
-                title,
-              };
-            } else {
-              newJsonElement = {
-                nid: inventoryTemp.elements[i].nid,
-                quantity,
-                providers,
-                title,
+                quantity: inventoryTemp.elements[i].quantity,
+                providers: providers,
+                title: inventoryTemp.elements[i].title,
+                distributions: inventoryTemp.elements[i].distributions,
+                last_modify: idReport,
               };
             }
-          } else {
-            newJsonElement = inventoryTemp.elements[i];
           }
         }
-        jsonFormatAddElements.elements.push(newJsonElement);
+        if (jsonFormatElement !== null) {
+          newArrayElementsPointOperation.push(jsonFormatElement);
+        }
       }
+      //validamos los nuevos
+      for (let y = 0; y < items.data.length; y++) {
+        let found = false;
+        for (let z = 0; z < newArrayElementsPointOperation.length; z++) {
+          if (items.data[y].nid === newArrayElementsPointOperation[z].nid) {
+            found = true;
+          }
+        }
+        if (!found) {
+          //elemento no agregado antes
+          let providers = [];
+          if (idProvider !== null) {
+            providers = [idProvider];
+          }
+          newArrayElementsPointOperation.push({
+            nid: items.data[y].nid,
+            quantity: items.data[y].quantity,
+            providers,
+            title: items.data[y].description,
+            distributions: [],
+            last_modify: idReport,
+          });
+        }
+      }
+      //asignamos el array mofificado
+      endArrayInventory = newArrayElementsPointOperation;
+
+      jsonFormatAddElements = { elements: endArrayInventory };
     } else {
+      //no hay elementos anteriormente agregados a la db
       for (let i = 0; i < items.data.length; i++) {
-        let providers = [idProvider];
+        let providers = [];
+        if (idProvider !== "") {
+          providers = [idProvider];
+        }
         let newJsonElement = {
           nid: items.data[i].nid,
           quantity: parseInt(items.data[i].quantity),
           providers,
           title: items.data[i].description,
+          distributions: [],
+          last_modify: idReport,
         };
         jsonFormatAddElements.elements.push(newJsonElement);
       }
     }
 
+    console.log(jsonFormatAddElements);
+
+    let doc2 = "";
+
     if (table === "materia_prima") {
-      await props.firebase.db
-        .collection("RawMaterial")
-        .doc("6Ti3WLE0cav83i0rYozs")
-        .set(jsonFormatAddElements, { merge: true })
-        .then((success) => {
-          openMensajePantalla(dispatch, {
-            open: true,
-            mensaje: "Se guardaron los cambios",
-          });
-        })
-        .catch((error) => {
-          console.log("Error:", error);
-        });
+      doc2 = "RawMaterials";
     } else if (table === "herramientas_y_equipos") {
-      await props.firebase.db
-        .collection("ToolsEquipment")
-        .doc("6Ti3WLE0cav83i0rYozs")
-        .set(jsonFormatAddElements, { merge: true })
-        .then((success) => {
-          openMensajePantalla(dispatch, {
-            open: true,
-            mensaje: "Se guardaron los cambios",
-          });
-        })
-        .catch((error) => {
-          console.log("Error:", error);
-        });
+      doc2 = "ToolsEquipment";
+    } else if (table === "supplies") {
+      doc2 = "Supplies";
     } else {
-      await props.firebase.db
-        .collection("Supplies")
-        .doc("TdxeXYYQKxGxfF3dQIUe")
-        .set(jsonFormatAddElements, { merge: true })
-        .then((success) => {
-          openMensajePantalla(dispatch, {
-            open: true,
-            mensaje: "Se guardaron los cambios",
-          });
-        })
-        .catch((error) => {
-          console.log("Error:", error);
-        });
+      doc2 = "Implements";
     }
+
+    await props.firebase.db
+      .collection("Inventories")
+      .doc(doc2)
+      .set(jsonFormatAddElements, { merge: true })
+      .then((success) => {
+        openMensajePantalla(dispatch, {
+          open: true,
+          mensaje: "SE GUARDARON LOS ELEMENTOS",
+        });
+      })
+      .catch((error) => {
+        console.log("Error:", error);
+      });
 
     let jsonFormatModifyUser = {};
 
-    let today = new Date();
-    let dd = today.getDate();
-    let mm = today.getMonth() + 1;
-    let yyyy = today.getFullYear();
-    let date = `${dd}-${mm}-${yyyy}`;
-
     if (type === "factura") {
       jsonFormatModifyUser = {
-        user: sesion,
+        user: sesion.usuario,
         table: table,
         date: date,
         add_bill: jsonFormatBillBuy,
@@ -582,30 +707,19 @@ const AddElement = (props) => {
       };
     } else {
       jsonFormatModifyUser = {
-        user: sesion,
+        user: sesion.usuario,
         table: table,
         date: date,
         add_elements_inventary: items,
       };
     }
 
-    /*
-    await props.firebase.db
-        .collection("BullBuy")
-        .add(jsonFormatBillBuy)
-        .then((success) => {
-          idBill = success.id;
-        })
-        .catch((error) => {
-          console.log("error: ", error);
-        });
-*/
-
     await props.firebase.db
       .collection("ModifyUserInventory")
       .add(jsonFormatModifyUser)
       .then((success) => {
-        props.history.replace(`/inventarios/mostrar/${table}/search`);
+        let id = success.id;
+        props.history.replace(`/inventarios/agregar/asignar/${table}/${id}`);
       })
       .catch((error) => {
         console.log("Error:", error);
@@ -629,7 +743,9 @@ const AddElement = (props) => {
                   ? "Materia Prima"
                   : table === "herramientas_y_equipos"
                   ? "Herramientas y Equipos"
-                  : "Insumos"}
+                  : table === "herramientas_y_equipos"
+                  ? "Insumos"
+                  : "Implementos"}
               </Typography>
               <Typography color="textPrimary">
                 {type === "factura" ? "Factura" : "Independiente"}
@@ -905,7 +1021,7 @@ const AddElement = (props) => {
                         clearOnBlur
                         handleHomeEndKeys
                         id=""
-                        options={itemsProvider}
+                        options={itemsAvaibles}
                         getOptionLabel={(item) => {
                           // Value selected with enter, right from the input
                           if (typeof item === "string") {
@@ -918,6 +1034,10 @@ const AddElement = (props) => {
                           // Regular item
                           return item.title;
                         }}
+                        getOptionDisabled={(option) =>
+                          option === itemsAvaibles[0] ||
+                          option === itemsAvaibles[divider]
+                        }
                         renderOption={(option) => option.title}
                         freeSolo
                         renderInput={(params) => (
@@ -1017,7 +1137,7 @@ const AddElement = (props) => {
         </Paper>
       ) : (
         ""
-      )}  
+      )}
       <Paper style={style.paperForm}>
         <Grid container justify="center">
           <Grid item xs={12} sm={6}>

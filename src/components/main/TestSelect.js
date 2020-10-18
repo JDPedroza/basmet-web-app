@@ -1,490 +1,478 @@
-import React, { useState, useEffect, useCallback } from "react";
-import {
-  Container,
-  Paper,
-  Grid,
-  Breadcrumbs,
-  Link,
-  Typography,
-  TextField,
-  Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormGroup,
-  FormControlLabel,
-  Checkbox,
-  Divider,
-  TableContainer,
-  Table,
-  TableHead,
-  TableBody,
-  TableCell,
-  TableRow,
-  IconButton,
-} from "@material-ui/core";
-import Autocomplete, {
-  createFilterOptions,
-} from "@material-ui/lab/Autocomplete";
+import React, { useState, useCallback, useEffect } from "react";
+import PropTypes from "prop-types";
+import clsx from "clsx";
+import { lighten, makeStyles } from "@material-ui/core/styles";
+import Table from "@material-ui/core/Table";
+import TableBody from "@material-ui/core/TableBody";
+import TableCell from "@material-ui/core/TableCell";
+import TableContainer from "@material-ui/core/TableContainer";
+import TableHead from "@material-ui/core/TableHead";
+import TablePagination from "@material-ui/core/TablePagination";
+import TableRow from "@material-ui/core/TableRow";
+import TableSortLabel from "@material-ui/core/TableSortLabel";
+import Toolbar from "@material-ui/core/Toolbar";
+import Typography from "@material-ui/core/Typography";
+import Paper from "@material-ui/core/Paper";
+import Checkbox from "@material-ui/core/Checkbox";
+import IconButton from "@material-ui/core/IconButton";
+import Tooltip from "@material-ui/core/Tooltip";
+import FormControlLabel from "@material-ui/core/FormControlLabel";
+import Switch from "@material-ui/core/Switch";
+import DeleteIcon from "@material-ui/icons/Delete";
+import FilterListIcon from "@material-ui/icons/FilterList";
+import { Button, Grid, TextField } from "@material-ui/core";
+import Autocomplete from "@material-ui/lab/Autocomplete";
 import { consumerFirebase } from "../../server";
-import {
-  MuiPickersUtilsProvider,
-  KeyboardDatePicker,
-} from "@material-ui/pickers";
+import { IndeterminateCheckBoxOutlined } from "@material-ui/icons";
 
-//utils
-import { useStateValue } from "../../sesion/store";
-import MomentUtils from "@date-io/moment";
-import { v4 as uuidv4 } from "uuid";
-import { openMensajePantalla } from "../../sesion/actions/snackBarAction";
+function createData(name, calories, fat, carbs, protein) {
+  return { name, calories, fat, carbs, protein };
+}
 
-//icons
-import HomeIcon from "@material-ui/icons/Home";
-import AddIcon from "@material-ui/icons/Add";
-import HighlightOffIcon from "@material-ui/icons/HighlightOff";
+function descendingComparator(a, b, orderBy) {
+  if (b[orderBy] < a[orderBy]) {
+    return -1;
+  }
+  if (b[orderBy] > a[orderBy]) {
+    return 1;
+  }
+  return 0;
+}
 
-const style = {
-  paper: {
-    backgraundColor: "#f5f5ff",
-    padding: "20px",
-    minheight: 650,
+function getComparator(order, orderBy) {
+  return order === "desc"
+    ? (a, b) => descendingComparator(a, b, orderBy)
+    : (a, b) => -descendingComparator(a, b, orderBy);
+}
+
+function stableSort(array, comparator) {
+  const stabilizedThis = array.map((el, index) => [el, index]);
+  stabilizedThis.sort((a, b) => {
+    const order = comparator(a[0], b[0]);
+    if (order !== 0) return order;
+    return a[1] - b[1];
+  });
+  return stabilizedThis.map((el) => el[0]);
+}
+
+const headCells = [
+  {
+    id: "name",
+    numeric: false,
+    disablePadding: true,
+    label: "Descripción",
   },
-  paperForm: {
-    backgraundColor: "#f5f5ff",
-    marginTop: 2,
-    padding: "20px",
-    minheight: 650,
-  },
-  paperWarning: {
-    marginTop: 2,
-    padding: "5px",
-    minheight: 650,
-  },
-  form: {
-    width: "100%",
-    padding: 20,
-    backgraundColor: "#f5f5ff",
-  },
-  submit: {
-    marginTop: 15,
-    marginBottom: 20,
-  },
-  formControl: {
-    margin: 1,
-    minWidth: 120,
-  },
+  { id: "calories", numeric: true, disablePadding: false, label: "Cantidad" },
+];
+
+function EnhancedTableHead(props) {
+  const {
+    classes,
+    onSelectAllClick,
+    order,
+    orderBy,
+    numSelected,
+    rowCount,
+    onRequestSort,
+  } = props;
+  const createSortHandler = (property) => (event) => {
+    onRequestSort(event, property);
+  };
+
+  return (
+    <TableHead>
+      <TableRow>
+        <TableCell padding="checkbox">
+          <Checkbox
+            indeterminate={numSelected > 0 && numSelected < rowCount}
+            checked={rowCount > 0 && numSelected === rowCount}
+            onChange={onSelectAllClick}
+            inputProps={{ "aria-label": "select all desserts" }}
+          />
+        </TableCell>
+        {headCells.map((headCell) => (
+          <TableCell
+            key={headCell.id}
+            align={headCell.numeric ? "right" : "left"}
+            padding={headCell.disablePadding ? "none" : "default"}
+            sortDirection={orderBy === headCell.id ? order : false}
+          >
+            <TableSortLabel
+              active={orderBy === headCell.id}
+              direction={orderBy === headCell.id ? order : "asc"}
+              onClick={createSortHandler(headCell.id)}
+            >
+              {headCell.label}
+              {orderBy === headCell.id ? (
+                <span className={classes.visuallyHidden}>
+                  {order === "desc" ? "sorted descending" : "sorted ascending"}
+                </span>
+              ) : null}
+            </TableSortLabel>
+          </TableCell>
+        ))}
+      </TableRow>
+    </TableHead>
+  );
+}
+
+EnhancedTableHead.propTypes = {
+  classes: PropTypes.object.isRequired,
+  numSelected: PropTypes.number.isRequired,
+  onRequestSort: PropTypes.func.isRequired,
+  onSelectAllClick: PropTypes.func.isRequired,
+  order: PropTypes.oneOf(["asc", "desc"]).isRequired,
+  orderBy: PropTypes.string.isRequired,
+  rowCount: PropTypes.number.isRequired,
 };
 
-const AddElement = (props) => {
-  const [elementsRawMaterials, setElementsRawMaterial] = useState([
-    { title: "Prueba", nid: "" },
-  ]);
-  const [elementsSupplies, setElementsSupplies] = useState([
-    { title: "", nid: "" },
+const useToolbarStyles = makeStyles((theme) => ({
+  root: {
+    paddingLeft: theme.spacing(2),
+    paddingRight: theme.spacing(1),
+  },
+  highlight:
+    theme.palette.type === "light"
+      ? {
+          color: theme.palette.secondary.main,
+          backgroundColor: lighten(theme.palette.secondary.light, 0.85),
+        }
+      : {
+          color: theme.palette.text.primary,
+          backgroundColor: theme.palette.secondary.dark,
+        },
+  title: {
+    flex: "1 1 100%",
+  },
+}));
+
+const EnhancedTableToolbar = (props) => {
+  const classes = useToolbarStyles();
+  const { numSelected, pointsOperation, selectedAssignamentElements } = props;
+
+  //PointOperation
+  let [selectedPointOperation, setSelectedPointOperation] = useState(null);
+
+  return (
+    <Toolbar
+      className={clsx(classes.root, {
+        [classes.highlight]: numSelected > 0,
+      })}
+    >
+      {numSelected > 0 ? (
+        <Grid container spacing={2}>
+          <Grid item xs={6} md={6}>
+            <Typography
+              className={classes.title}
+              color="inherit"
+              variant="subtitle1"
+              component="div"
+            >
+              {numSelected} elementos seleccionados
+            </Typography>
+          </Grid>
+          <Grid item xs={6} md={6}>
+            <Autocomplete
+              id="select_point_operation"
+              value={selectedPointOperation}
+              onChange={(event, newDataPointOperation) => {
+                setSelectedPointOperation(newDataPointOperation);
+              }}
+              options={pointsOperation}
+              getOptionLabel={(option) => option.address}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Punto de Operación"
+                  variant="outlined"
+                />
+              )}
+            />
+          </Grid>
+        </Grid>
+      ) : (
+        <Typography
+          className={classes.title}
+          variant="h6"
+          id="tableTitle"
+          component="div"
+        >
+          Nutrition
+        </Typography>
+      )}
+      {numSelected > 0 ? (
+        <Tooltip title="Delete">
+          <IconButton aria-label="delete" onClick={selectedAssignamentElements}>
+            <DeleteIcon />
+          </IconButton>
+        </Tooltip>
+      ) : (
+        <Tooltip title="Filter list">
+          <IconButton aria-label="filter list">
+            <FilterListIcon />
+          </IconButton>
+        </Tooltip>
+      )}
+    </Toolbar>
+  );
+};
+
+EnhancedTableToolbar.propTypes = {
+  numSelected: PropTypes.number.isRequired,
+  pointsOperation: PropTypes.arrayOf(
+    PropTypes.shape({
+      description: PropTypes.string.isRequired,
+      quantity: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+};
+
+const useStyles = makeStyles((theme) => ({
+  root: {
+    width: "100%",
+  },
+  paper: {
+    width: "100%",
+    marginBottom: theme.spacing(2),
+  },
+  table: {
+    minWidth: 750,
+  },
+  visuallyHidden: {
+    border: 0,
+    clip: "rect(0 0 0 0)",
+    height: 1,
+    margin: -1,
+    overflow: "hidden",
+    padding: 0,
+    position: "absolute",
+    top: 20,
+    width: 1,
+  },
+}));
+
+const EnhancedTable = (props) => {
+  const classes = useStyles();
+  const [order, setOrder] = useState("asc");
+  const [orderBy, setOrderBy] = useState("calories");
+  const [selected, setSelected] = useState([]);
+  const [page, setPage] = useState(0);
+  const [dense, setDense] = useState(false);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+
+  let [pointsOperation, setDataPointsOperation] = useState({ data: [] });
+  const [itemsSelected, setItemsSelected] = useState([])
+  //PointOperation
+  let [selectedPointOperation, setSelectedPointOperation] = useState(null);
+
+  const [rows, setRows] = useState([
+    {
+      name: "Objeto de prueba",
+      calories: 2,
+      active: false,
+      carbs: 67,
+      protein: 4.3,
+    },
+    {
+      name: "Objeto de prueba 2",
+      calories: 2,
+      active: false,
+      carbs: 67,
+      protein: 4.3,
+    },
+    {
+      name: "Objeto de prueba 3",
+      calories: 2,
+      active: false,
+      carbs: 67,
+      protein: 4.3,
+    },
   ]);
 
-  let [items, setDataItems] = useState({
-    raw_materials: [
-      {
-        nid: 0,
-        quantity: 0,
-        description: "",
-      },
-    ],
-    supplies: [
-      {
-        nid: 0,
-        quantity: 0,
-        description: "",
-      },
-    ]
-  });
-
-  const [value, setValue] = useState([{ title: "" }]);
-  const [selectedTitlesSupplies, setSelectedTitlesSupplies] = useState([
-    { title: "" },
-  ]);
-
+  //getData
   const fetchMyAPI = useCallback(async () => {
-    let itemsRawMaterials = [];
-    //getDataRawMaterials
-    let getDataRawMaterials = await props.firebase.db
-      .collection("RawMaterial")
-      .doc("6Ti3WLE0cav83i0rYozs")
-      .get();
-    let dataRawMaterials = getDataRawMaterials.data();
+    //getDataPointsOperation
+    let objectQuery = props.firebase.db
+      .collection("PointsOperation")
+      .orderBy("city");
 
-    for (let i = 0; i < dataRawMaterials.elements.length; i++) {
-      let jsonFormatElements = {
-        title: dataRawMaterials.elements[i].title,
-        nid: dataRawMaterials.elements[i].nid,
-      };
-      itemsRawMaterials.push(jsonFormatElements);
-    }
+    const snapshot = await objectQuery.get();
 
-    setElementsRawMaterial(itemsRawMaterials);
+    const arrayPointsOperation = snapshot.docs.map((doc) => {
+      let data = doc.data();
+      let id = doc.id;
+      return { id, ...data };
+    });
 
-    //getDataSupplies
-    let itemsSupplies = [];
-
-    let getDataSupplies = await props.firebase.db
-      .collection("Supplies")
-      .doc("TdxeXYYQKxGxfF3dQIUe")
-      .get();
-    let dataSupplies = getDataSupplies.data();
-
-    for (let i = 0; i < dataSupplies.elements.length; i++) {
-      let jsonFormatElements = {
-        title: dataSupplies.elements[i].title,
-        nid: dataSupplies.elements[i].nid,
-      };
-      itemsSupplies.push(jsonFormatElements);
-    }
-
-    setElementsSupplies(itemsSupplies);
+    setDataPointsOperation({
+      data: arrayPointsOperation,
+    });
   }, []);
 
   useEffect(() => {
     fetchMyAPI();
   }, [fetchMyAPI]);
 
-  const handleItemChange = (i, event, table) => {
-    let data = "";
-    let atribute = "";
-    if (table === "rawMaterials") {
-      atribute = "raw_materials";
-      data = items.data;
-    } else {
-      atribute = "supplies";
-      data = items.supplies;
-    }
-
-    const name = event.target.name;
-    const value = event.target.value;
-
-    if (name === "quantity") {
-      data[i].quantity = value;
-    } else if (name === "description") {
-      data[i].description = value;
-    }
-
-    setDataItems({ ...items, [atribute]: data });
+  const handleRequestSort = (event, property) => {
+    const isAsc = orderBy === property && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(property);
   };
 
-  const handleItemAdd = (table) => {
-    if (table === "rawMaterials") {
-      const tempValue = value;
-      tempValue.push({ title: "" });
-
-      setValue(tempValue);
-
-      const raw_materials = items.raw_materials;
-      raw_materials.push({
-        quantity: 0,
-        description: "",
-      });
-      setDataItems({
-        ...items,
-        raw_materials,
-      });
-    } else {
-      const tempSelectedTitlesSupplies = selectedTitlesSupplies;
-      tempSelectedTitlesSupplies.push({ title: "" });
-
-      setSelectedTitlesSupplies(tempSelectedTitlesSupplies);
-
-      const supplies = items.supplies;
-      supplies.push({
-        quantity: 0,
-        description: "",
-        unit_value: 0,
-        total_value: 0,
-      });
-      setDataItems({
-        ...items,
-        supplies,
-      });
+  const handleSelectAllClick = (event) => {
+    if (event.target.checked) {
+      const newSelecteds = rows.map((n) => n.name);
+      setSelected(newSelecteds);
+      return;
     }
+    setSelected([]);
   };
 
-  const handleItemRemove = (i, table) => {
-    if (table === "rawMaterials") {
-      const tempValue = value;
-      tempValue.splice(i, 1);
-      setValue(tempValue);
+  const handleClick = (event, name) => {
+    const selectedIndex = selected.indexOf(name);
+    let newSelected = [];
 
-      const raw_materials = items.raw_materials;
-      raw_materials.splice(i, 1);
-      setDataItems({
-        ...items,
-        raw_materials,
-      });
-    } else {
-      const tempSelectedTitlesSupplies = selectedTitlesSupplies;
-      tempSelectedTitlesSupplies.splice(i, 1);
-      setSelectedTitlesSupplies(tempSelectedTitlesSupplies);
-
-      const supplies = items.supplies;
-      supplies.splice(i, 1);
-      setDataItems({
-        ...items,
-        supplies,
-      });
+    if (selectedIndex === -1) {
+      newSelected = newSelected.concat(selected, name);
+    } else if (selectedIndex === 0) {
+      newSelected = newSelected.concat(selected.slice(1));
+    } else if (selectedIndex === selected.length - 1) {
+      newSelected = newSelected.concat(selected.slice(0, -1));
+    } else if (selectedIndex > 0) {
+      newSelected = newSelected.concat(
+        selected.slice(0, selectedIndex),
+        selected.slice(selectedIndex + 1)
+      );
     }
+
+    setSelected(newSelected);
   };
 
-  const saveDataFirebase = async (e) => {
-    e.preventDefault();
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const handleChangeDense = (event) => {
+    setDense(event.target.checked);
+  };
+
+  const isSelected = (name) => selected.indexOf(name) !== -1;
+
+  const handleChange = (event, index) => {
+    console.log(event.target.checked)
+    let tempItemsSelected = itemsSelected;
+    tempItemsSelected[index] = event.target.checked
+    setItemsSelected(tempItemsSelected);
+    let tempRows = rows;
+    tempRows[index].active = event.target.checked
+    setRows(tempRows)
+  };
+
+  const emptyRows =
+    rowsPerPage - Math.min(rowsPerPage, rows.length - page * rowsPerPage);
+
+  const validation = (e) => {
+    let tempRows = rows;
+    let tempSelected = selected;
+    for (let i = 0; i < selected.length; i++) {
+      for (let j = 0; j < rows.length; j++) {
+        if (selected[i] === rows[j].name) {
+          tempSelected.splice(j, 1);
+          tempRows.splice(j, 1);
+        }
+      }
+    }
+    setSelected(tempSelected);
+    console.log(tempRows)
+    setRows(tempRows);
   };
 
   return (
-    <Container component="main" maxWidth="md" justify="center">
-      <Paper style={style.paper}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={12}>
-            <Breadcrumbs aria-label="breadcrumbs">
-              <Link color="inherit" style={style.link} href="/home">
-                <HomeIcon />
-                Principal
-              </Link>
-              <Typography color="textPrimary">Inventario</Typography>
-              <Typography color="textPrimary">Agregar</Typography>
-              <Typography color="textPrimary">Productos en proceso </Typography>
-              <Typography color="textPrimary">Nuevo Proceso</Typography>
-            </Breadcrumbs>
-          </Grid>
-        </Grid>
-      </Paper>
-      <Paper style={style.paperForm}>
-        <Grid container spacing={2} style={style.form}>
-          <Grid item xs={12} md={12}>
-            <Typography color="textPrimary" variant="h6">
-              Insumos
-            </Typography>
-          </Grid>
-          <TableContainer item xs={12} sm={12}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell align="center" style={{ width: "65%" }}>
-                    Descripcion
-                  </TableCell>
-                  <TableCell align="center" style={{ width: "15%" }}>
-                    Cantidad
-                  </TableCell>
-                  <TableCell align="center" style={{ width: "10%" }}>
-                    <IconButton
-                      aria-label="addElement"
-                      onClick={() => handleItemAdd("rawMaterials")}
+    <div className={classes.root}>
+      <Paper className={classes.paper}>
+        
+        <EnhancedTableToolbar
+          numSelected={selected.length}
+          pointsOperation={pointsOperation.data}
+          selectedAssignamentElements={validation}
+        />
+        <TableContainer>
+          <Table
+            className={classes.table}
+            aria-labelledby="tableTitle"
+            aria-label="enhanced table"
+          >
+            <TableBody>
+              {rows.map((row, index) => {
+                return (
+                  <TableRow
+                    hover
+                    disable={row.active}
+                    onClick={(event) => handleClick(event, row.name)}
+                    role="checkbox"
+                    aria-checked={row.active}
+                    tabIndex={-1}
+                    key={row.name}
+                    selected={row.active}
+                  >
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        checked={row.active}
+                        onChange={(event)=>handleChange(event, index)}
+                      />
+                    </TableCell>
+                    <TableCell
+                      component="th"
+                      scope="row"
+                      padding="none"
                     >
-                      <AddIcon />
-                    </IconButton>
-                  </TableCell>
+                      {row.name}
+                    </TableCell>
+                    <TableCell align="right">{row.calories}</TableCell>
+                  </TableRow>
+                );
+              })}
+              {emptyRows > 0 && (
+                <TableRow style={{ height: (dense ? 33 : 53) * emptyRows }}>
+                  <TableCell colSpan={6} />
                 </TableRow>
-              </TableHead>
-              <TableBody>
-                {items.raw_materials.map((item, idx) => {
-                  return (
-                    <TableRow key={idx}>
-                      <TableCell align="center">
-                        <Autocomplete
-                          id="select_provider"
-                          options={elementsSupplies}
-                          value={value[idx].title}
-                          onChange={(event, newDataProvider) => {
-                            const data = items.raw_materials;
-                            let tempValue = null;
-                            if (newDataProvider !== null) {
-                              tempValue = value;
-                              tempValue[idx] = newDataProvider;
-                              setValue(tempValue);
-                              data[idx].description = newDataProvider.title;
-                              data[idx].nid = newDataProvider.nid;
-                            } else {
-                              tempValue = value;
-                              tempValue[idx] = { title: "", nid: "" };
-                              setValue(tempValue);
-                              data[idx].description = "";
-                              data[idx].nid = "";
-                            }
-                          }}
-                          freeSolo
-                          getOptionLabel={(item) => {
-                            // Value selected with enter, right from the input
-                            if (typeof item === "string") {
-                              return item;
-                            }
-                            // Add "xxx" item created dynamically
-                            if (item.inputValue) {
-                              return item.inputValue;
-                            }
-                            // Regular item
-                            return item.title;
-                          }}
-                          fullWidth
-                          renderInput={(params) => (
-                            <TextField {...params} fullWidth label="" />
-                          )}
-                        />
-                      </TableCell>
-                      <TableCell align="center">
-                        <TextField
-                          fullWidth
-                          name="quantity"
-                          id="quantity"
-                          label=""
-                          type="number"
-                          value={item.quantity}
-                          onChange={(e) =>
-                            handleItemChange(idx, e, "rawMaterials")
-                          }
-                        />
-                      </TableCell>
-                      <TableCell align="center">
-                        <IconButton
-                          aria-label="edit"
-                          onClick={() => handleItemRemove(idx, "rawMaterials")}
-                        >
-                          <HighlightOffIcon />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Grid>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25]}
+          component="div"
+          count={rows.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onChangePage={handleChangePage}
+          onChangeRowsPerPage={handleChangeRowsPerPage}
+        />
       </Paper>
-      <Paper style={style.paperForm}>
-        <Grid container spacing={2} style={style.form}>
-          <Grid item xs={12} md={12}>
-            <Typography color="textPrimary" variant="h6">
-              Materia Prima
-            </Typography>
-          </Grid>
-          <TableContainer item xs={12} sm={12}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell align="center" style={{ width: "65%" }}>
-                    Descripcion
-                  </TableCell>
-                  <TableCell align="center" style={{ width: "15%" }}>
-                    Cantidad
-                  </TableCell>
-                  <TableCell align="center" style={{ width: "10%" }}>
-                    <IconButton
-                      aria-label="addElement"
-                      onClick={() => handleItemAdd("supplies")}
-                    >
-                      <AddIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {items.supplies.map((item, idx) => {
-                  return (
-                    <TableRow key={idx}>
-                      <TableCell align="center">
-                        <Autocomplete
-                          id="select_element_raw_materials"
-                          options={elementsRawMaterials}
-                          value={selectedTitlesSupplies[idx].title}
-                          onChange={(event, newDataProvider) => {
-                            const data = items.supplies;
-                            let tempValue = null;
-                            if (newDataProvider !== null) {
-                              tempValue = value;
-                              tempValue[idx] = newDataProvider;
-                              setValue(tempValue);
-                              data[idx].description = newDataProvider.title;
-                              data[idx].nid = newDataProvider.nid;
-                            } else {
-                              tempValue = value;
-                              tempValue[idx] = { title: "", nid: "" };
-                              setValue(tempValue);
-                              data[idx].description = "";
-                              data[idx].nid = "";
-                            }
-                          }}
-                          freeSolo
-                          getOptionLabel={(item) => {
-                            // Value selected with enter, right from the input
-                            if (typeof item === "string") {
-                              return item;
-                            }
-                            // Add "xxx" item created dynamically
-                            if (item.inputValue) {
-                              return item.inputValue;
-                            }
-                            // Regular item
-                            return item.title;
-                          }}
-                          fullWidth
-                          renderInput={(params) => (
-                            <TextField {...params} fullWidth label="" />
-                          )}
-                        />
-                      </TableCell>
-                      <TableCell align="center">
-                        <TextField
-                          fullWidth
-                          name="quantity"
-                          id="quantity"
-                          label=""
-                          type="number"
-                          value={item.quantity}
-                          onChange={(e) => handleItemChange(idx, e, "supplies")}
-                        />
-                      </TableCell>
-                      <TableCell align="center">
-                        <IconButton
-                          aria-label="edit"
-                          onClick={() => handleItemRemove(idx, "supplies")}
-                        >
-                          <HighlightOffIcon />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Grid>
+
+      <Paper>
+        <Button onClick={validation}>Pruebas</Button>
       </Paper>
-      <Paper style={style.paperWarning}>
-        <Grid container spacing={2} style={style.form}>
-          <Grid item xs={12} md={12}>
-            <Typography color="textPrimary">
-              Elementos Necesarios (Por favor, ingrese los elementos necesario
-              para el desarrollo del producto)
-            </Typography>
-          </Grid>
-        </Grid>
-      </Paper>
-      <Paper style={style.paperForm}>
-        <Grid container justify="center">
-          <Grid item xs={12} sm={6}>
-            <Button
-              type="button"
-              fullWidth
-              variant="contained"
-              size="large"
-              color="primary"
-              style={style.submit}
-              onClick={saveDataFirebase}
-            >
-              GUARDAR
-            </Button>
-          </Grid>
-        </Grid>
-      </Paper>
-    </Container>
+    </div>
   );
 };
 
-export default consumerFirebase(AddElement);
+export default consumerFirebase(EnhancedTable);
+
+/*
+<EnhancedTableHead
+              classes={classes}
+              numSelected={selected.length}
+              order={order}
+              orderBy={orderBy}
+              onSelectAllClick={handleSelectAllClick}
+              onRequestSort={handleRequestSort}
+              rowCount={rows.length}
+            />
+*/

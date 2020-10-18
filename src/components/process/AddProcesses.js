@@ -8,21 +8,15 @@ import {
   Typography,
   TextField,
   Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   FormGroup,
   FormControlLabel,
   Checkbox,
-  Divider,
   TableContainer,
   Table,
   TableHead,
   TableBody,
   TableCell,
   TableRow,
-  IconButton,
 } from "@material-ui/core";
 import { makeStyles } from "@material-ui/core/styles";
 import Stepper from "@material-ui/core/Stepper";
@@ -41,13 +35,10 @@ import {
 //utils
 import { useStateValue } from "../../sesion/store";
 import MomentUtils from "@date-io/moment";
-import { v4 as uuidv4 } from "uuid";
 import { openMensajePantalla } from "../../sesion/actions/snackBarAction";
 
 //icons
 import HomeIcon from "@material-ui/icons/Home";
-import AddIcon from "@material-ui/icons/Add";
-import HighlightOffIcon from "@material-ui/icons/HighlightOff";
 
 const style = {
   paper: {
@@ -123,11 +114,7 @@ function getStepContent(step) {
 const AddStandarizations = (props) => {
   //Generals
   const { type } = props.match.params;
-
-  const data = {
-    name: "Johan David Pedroza",
-    date: "01-01-2017",
-  };
+  const [{ sesion }, dispatch] = useStateValue();
 
   //elementsStandardized
   const [elementsStandardized, setElementsStandardized] = useState([]);
@@ -156,18 +143,29 @@ const AddStandarizations = (props) => {
     { title: "", nid: "" },
   ]);
 
+  //dataEmployee
+  const [employees, setEmployees] = useState([]);
+  let [selectedEmployee, setSelectedEmployee] = useState(null);
+
   //dataProgress
   const [selectedDate, setSelectedDate] = useState(new Date());
   const classes = useStyles();
   const [activeStep, setActiveStep] = React.useState(0);
   const steps = getSteps();
 
+  let today = new Date();
+  let dd = today.getDate();
+  let mm = today.getMonth() + 1;
+  let yyyy = today.getFullYear();
+  let date = `${dd}-${mm}-${yyyy}`;
+
   const [dataProccess, setDataProccess] = useState({
     employee_responsable: "",
-    start_date: "",
+    start_date: date,
     finish_date: "",
     remainer: [],
     standardization: "",
+    standardization_name: "",
     quantity: 1,
     step: 0,
   });
@@ -187,8 +185,8 @@ const AddStandarizations = (props) => {
     //getDataRawMaterials
     let itemsRawMaterials = [];
     let getDataRawMaterials = await props.firebase.db
-      .collection("RawMaterial")
-      .doc("6Ti3WLE0cav83i0rYozs")
+      .collection("Inventories")
+      .doc("RawMaterials")
       .get();
     let dataRawMaterials = getDataRawMaterials.data();
 
@@ -206,8 +204,8 @@ const AddStandarizations = (props) => {
     //getDataSupplies
     let itemsSupplies = [];
     let getDataSupplies = await props.firebase.db
-      .collection("Supplies")
-      .doc("TdxeXYYQKxGxfF3dQIUe")
+      .collection("Inventories")
+      .doc("Supplies")
       .get();
     let dataSupplies = getDataSupplies.data();
 
@@ -220,6 +218,18 @@ const AddStandarizations = (props) => {
       itemsSupplies.push(jsonFormatElements);
     }
     setElementsSupplies(itemsSupplies);
+
+    //getDataEmployees
+    let getDataEmployees = await props.firebase.db
+      .collection("Employees")
+      .orderBy("nid")
+      .get();
+    const employees = getDataEmployees.docs.map((doc) => {
+      let data = doc.data();
+      let id = doc.id;
+      return { id, name: data.name };
+    });
+    setEmployees(employees);
   }, []);
 
   useEffect(() => {
@@ -258,6 +268,12 @@ const AddStandarizations = (props) => {
       supplies_avaible: quantityElementSupplies,
       quantity: 1,
     });
+
+    setDataProccess({
+      ...dataProccess,
+      standardization: element.nid,
+      standardization_name: element.name,
+    });
   };
 
   const changeDataProccess = (e) => {
@@ -267,12 +283,24 @@ const AddStandarizations = (props) => {
     });
   };
 
-  //dataProgress
+  const updateDataEmployeeProccess = (e) => {
+    let name = "";
+    if (e !== null) {
+      name = e.name;
+    }
+    setDataProccess({
+      ...dataProccess,
+      employee_responsable: name,
+    });
+  };
 
+  //dataProgress
   const handleChange = (event) => {
-    setBillExtras((prev) => ({
+    let attribute = event.target.name;
+    let checked = event.target.checked;
+    setDataExtras((prev) => ({
       ...prev,
-      [event.target.name]: event.target.checked,
+      [attribute]: checked,
     }));
   };
 
@@ -282,9 +310,13 @@ const AddStandarizations = (props) => {
         ...dataProccess,
         step: 1,
       });
+    } else if (activeStep === 1) {
+      setDataProccess({
+        ...dataProccess,
+        step: 2,
+      });
     }
     setActiveStep((prevActiveStep) => prevActiveStep + 1);
-    console.log(dataProccess)
   };
 
   const handleBack = () => {
@@ -298,16 +330,110 @@ const AddStandarizations = (props) => {
   const handleDateChange = (date) => {
     const format = date.format("DD-MM-YYYY");
     setSelectedDate(date);
+    setDataProccess({
+      ...dataProccess,
+      start_date: format,
+    });
   };
 
-  let [billExtras, setBillExtras] = useState({
-    iva: false,
-    rf: false,
+  let [dataExtras, setDataExtras] = useState({
+    raw_materials: false,
+    supplies: false,
   });
 
   //saveData
   const saveDataFirebase = async (e) => {
     e.preventDefault();
+
+    //generamos el reporte de cambios en inventarios
+    let today = new Date();
+    let dd = today.getDate();
+    let mm = today.getMonth() + 1;
+    let yyyy = today.getFullYear();
+    let date = `${dd}-${mm}-${yyyy}`;
+
+    //generamos los elementos
+    //obtenemos la estandarización
+    let snapShotStandardization = await props.firebase.db
+      .collection("Standardizations")
+      .doc("3qPO90cfep2Xhg89rvnu")
+      .get();
+    let dataStandardization = snapShotStandardization.data();
+    let dataElements = [];
+
+    //generamos la data
+    for (let i = 0; i < dataStandardization.elements.length; i++) {
+      if (
+        dataStandardization.elements[i].nid === dataProccess.standardization
+      ) {
+        let jsonDataElement = {};
+        for (
+          let j = 0;
+          j < dataStandardization.elements[i].raw_materials.length;
+          j++
+        ) {
+          jsonDataElement = {
+            description:
+              dataStandardization.elements[i].raw_materials[j].description,
+            nid: dataStandardization.elements[i].raw_materials[j].nid,
+            quantity:
+              dataStandardization.elements[i].raw_materials[j].quantity *
+              dataProccess.quantity,
+          };
+          dataElements.push(jsonDataElement);
+        }
+        for (
+          let k = 0;
+          k < dataStandardization.elements[i].supplies.length;
+          k++
+        ) {
+          jsonDataElement = {
+            description:
+              dataStandardization.elements[i].supplies[k].description,
+            nid: dataStandardization.elements[i].supplies[k].nid,
+            quantity:
+              dataStandardization.elements[i].supplies[k].quantity *
+              dataProccess.quantity,
+          };
+          dataElements.push(jsonDataElement);
+        }
+      }
+    }
+
+    let jsonFormatReport = {
+      user: sesion.usuario,
+      date,
+      type: "Subtracción para realización de producto",
+      data: dataElements,
+    };
+
+    //saveReport
+    /*
+    let idReport = "";
+    await props.firebase.db
+      .collection("Reports")
+      .add(jsonFormatReport)
+      .then((success) => {
+        idReport = success.id;
+      })
+      .catch((error) => {
+        console.log("error: ", error);
+      });
+
+    dataElement.last_modify = idReport;
+    */
+    
+    //actulizamos los inventarios
+    //obtenemos la data del elemento guardado
+    console.log(dataElements)
+
+    let data = await props.firebase.db.collection("Inventories").doc("RawMaterials").get();
+
+    let inventory = data.data();
+
+
+    
+    //guardamos el proceso
   };
 
   return (
@@ -316,7 +442,7 @@ const AddStandarizations = (props) => {
         <Grid container spacing={3}>
           <Grid item xs={12} md={12}>
             <Breadcrumbs aria-label="breadcrumbs">
-              <Link color="inherit" style={style.link} href="/home">
+              <Link color="inherit" style={style.link} href="/">
                 <HomeIcon />
                 Principal
               </Link>
@@ -449,12 +575,28 @@ const AddStandarizations = (props) => {
                     {index === 0 ? (
                       <Grid container spacing={3}>
                         <Grid item xs={6} md={6}>
-                          <TextField
+                          <Autocomplete
                             disabled={dataProccess.step === 0 ? false : true}
-                            name="employee"
-                            variant="outlined"
+                            id="select_employee"
+                            options={employees}
+                            value={selectedEmployee}
+                            onChange={(event, newEmployee) => {
+                              setSelectedEmployee(newEmployee);
+                              updateDataEmployeeProccess(newEmployee);
+                            }}
+                            getOptionLabel={(employee) => employee.name}
                             fullWidth
-                            label="Empleado"
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                disabled={
+                                  dataProccess.step === 0 ? false : true
+                                }
+                                label="Empleado"
+                                variant="outlined"
+                                required
+                              />
+                            )}
                           />
                         </Grid>
                         <Grid item xs={6} md={6}>
@@ -495,13 +637,14 @@ const AddStandarizations = (props) => {
                                   disabled={
                                     dataProccess.step === 0 ? false : true
                                   }
-                                  checked={billExtras.iva}
+                                  checked={dataExtras.raw_materials}
                                   onChange={handleChange}
-                                  name="iva"
+                                  name="raw_materials"
                                   color="primary"
                                 />
                               }
                               label="Materia Prima"
+                              name="raw_materials"
                             />
                             <FormControlLabel
                               control={
@@ -509,13 +652,14 @@ const AddStandarizations = (props) => {
                                   disabled={
                                     dataProccess.step === 0 ? false : true
                                   }
-                                  checked={billExtras.rf}
+                                  checked={dataExtras.supplies}
                                   onChange={handleChange}
-                                  name="rf"
+                                  name="supplies"
                                   color="primary"
                                 />
                               }
                               label="Insumos"
+                              name="supplies"
                             />
                           </FormGroup>
                           <Typography style={{ fontSize: 10 }}>
@@ -526,13 +670,15 @@ const AddStandarizations = (props) => {
                       </Grid>
                     ) : index === 1 ? (
                       <Grid container spacing={3}>
-                        <Typography>
+                        <Typography style={{ width: "100%" }}>
                           Empleado: {dataProccess.employee_responsable}
                         </Typography>
-                        <Typography>
-                          Inició de proceso: {dataProccess.date}
+                        <Typography style={{ width: "100%" }}>
+                          Inició de proceso: {dataProccess.start_date}
                         </Typography>
-                        <Typography>Producto: {dataProccess.standardization}</Typography>
+                        <Typography style={{ width: "100%" }}>
+                          Producto: {dataProccess.standardization_name}
+                        </Typography>
                       </Grid>
                     ) : (
                       ""
@@ -590,7 +736,7 @@ const AddStandarizations = (props) => {
               style={style.submit}
               onClick={saveDataFirebase}
             >
-              GUARDAR
+              GUARDAR ESTADO
             </Button>
           </Grid>
         </Grid>

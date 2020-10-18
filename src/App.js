@@ -16,8 +16,10 @@ import PrefilUsuario from "./components/security/PerfilUsuario";
 
 //inventory
 import AddElements from "./components/inventory/AddElements";
+import AddAssignamentsElements from "./components/inventory/AddAssignaments"
 import AddStandarizations from "./components/inventory/AddStandarizations";
 import ListElements from "./components/inventory/ListElements";
+import EditElements from "./components/inventory/EditElements";
 
 //processes
 import AddProcesses from "./components/process/AddProcesses";
@@ -29,13 +31,23 @@ import ListClients from "./components/client/ListClients";
 //clients
 import AddPointOperation from "./components/pointsOperation/AddPointOperation";
 
+//providers
 import AddProvider from "./components/provider/AddProvider";
 import ListProvider from "./components/provider/ListProvider";
 import EditProvider from "./components/provider/EditProvider";
+
+//employees
+import AddEmployee from "./components/employee/AddEmployee"
+
+//utils
 import TestSelect from "./components/main/TestSelect";
+
+//home
 import Home from "./components/main/home";
 
 import Page404 from "./components/error/Page404";
+import AddAssignaments from "./components/employee/AddAssignaments";
+
 
 function App(props) {
   let firebase = React.useContext(FirebaseContext);
@@ -78,12 +90,7 @@ function App(props) {
           <AppNavBar />
           <Grid container>
             <Switch>
-              <RutaAutenticada
-                exact
-                path="/perfil/modify"
-                autenticadoFirebase={firebase.auth.currentUser}
-                component={PrefilUsuario}
-              />
+              <Route path="/perfil/modify" component={PrefilUsuario} />
               <Route path="/perfil/add" exact component={RegistrarUsuario} />
               <Route path="/iniciar_sesion" exact component={Login} />
               <RutaAutenticada
@@ -100,9 +107,21 @@ function App(props) {
               />
               <RutaAutenticada
                 exact
+                path="/inventarios/agregar/asignar/:table/:id"
+                autenticadoFirebase={firebase.auth.currentUser}
+                component={AddAssignamentsElements}
+              />
+              <RutaAutenticada
+                exact
                 path="/inventarios/mostrar/:table/:query"
                 autenticadoFirebase={firebase.auth.currentUser}
                 component={ListElements}
+              />
+              <RutaAutenticada
+                exact
+                path="/inventarios/editar/:table/:id"
+                autenticadoFirebase={firebase.auth.currentUser}
+                component={EditElements}
               />
 
               <RutaAutenticada
@@ -134,6 +153,19 @@ function App(props) {
 
               <RutaAutenticada
                 exact
+                path="/empleados/add"
+                autenticadoFirebase={firebase.auth.currentUser}
+                component={AddEmployee}                
+              />
+              <RutaAutenticada
+                exact
+                path="/empleados/mostrar/:query/:type/:id"
+                autenticadoFirebase={firebase.auth.currentUser}
+                component={AddAssignaments}                
+              />
+
+              <RutaAutenticada
+                exact
                 path="/proveedor/agregar/:type"
                 autenticadoFirebase={firebase.auth.currentUser}
                 component={AddProvider}
@@ -158,7 +190,7 @@ function App(props) {
               />
               <RutaAutenticada
                 exact
-                path="/home"
+                path="/"
                 autenticadoFirebase={firebase.auth.currentUser}
                 component={Home}
               />
