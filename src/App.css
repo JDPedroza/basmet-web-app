@@ -28,6 +28,10 @@
   color: #61dafb;
 }
 
+#container {
+  min-height: calc(100vh - 60px - 50px);
+}
+
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);
@@ -36,3 +40,5 @@
     transform: rotate(360deg);
   }
 }
+
+

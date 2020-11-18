@@ -1,478 +1,733 @@
-import React, { useState, useCallback, useEffect } from "react";
-import PropTypes from "prop-types";
-import clsx from "clsx";
-import { lighten, makeStyles } from "@material-ui/core/styles";
-import Table from "@material-ui/core/Table";
-import TableBody from "@material-ui/core/TableBody";
-import TableCell from "@material-ui/core/TableCell";
-import TableContainer from "@material-ui/core/TableContainer";
-import TableHead from "@material-ui/core/TableHead";
-import TablePagination from "@material-ui/core/TablePagination";
-import TableRow from "@material-ui/core/TableRow";
-import TableSortLabel from "@material-ui/core/TableSortLabel";
-import Toolbar from "@material-ui/core/Toolbar";
-import Typography from "@material-ui/core/Typography";
-import Paper from "@material-ui/core/Paper";
-import Checkbox from "@material-ui/core/Checkbox";
-import IconButton from "@material-ui/core/IconButton";
-import Tooltip from "@material-ui/core/Tooltip";
-import FormControlLabel from "@material-ui/core/FormControlLabel";
-import Switch from "@material-ui/core/Switch";
-import DeleteIcon from "@material-ui/icons/Delete";
-import FilterListIcon from "@material-ui/icons/FilterList";
-import { Button, Grid, TextField } from "@material-ui/core";
-import Autocomplete from "@material-ui/lab/Autocomplete";
-import { consumerFirebase } from "../../server";
-import { IndeterminateCheckBoxOutlined } from "@material-ui/icons";
+import React, { useState } from "react";
+import imgGuide from "./images/Guia.jpg";
+import iconInventario from "./images/icon_inventario.png";
+import iconProcess from "./images/icon_process.png";
+import iconClients from "./images/icon_clients.png";
+import iconPuntoOperacion from "./images/icon_puntosOperacion.png";
+import iconEmpleado from "./images/icon_empleado.png";
+import iconTraslados from "./images/icon_translados.png";
+import iconProveedores from "./images/icon_proveedores.png";
+import iconUsuarios from "./images/icon_usuarios.png";
+import iconVehiculos from "./images/icon_vehicles.png";
 
-function createData(name, calories, fat, carbs, protein) {
-  return { name, calories, fat, carbs, protein };
-}
+import { ItemOptions } from "./components/itemOptions";
 
-function descendingComparator(a, b, orderBy) {
-  if (b[orderBy] < a[orderBy]) {
-    return -1;
-  }
-  if (b[orderBy] > a[orderBy]) {
-    return 1;
-  }
-  return 0;
-}
+import { Avatar, Grid, Fab, Tooltip } from "@material-ui/core";
+import "./styles/home.scss";
 
-function getComparator(order, orderBy) {
-  return order === "desc"
-    ? (a, b) => descendingComparator(a, b, orderBy)
-    : (a, b) => -descendingComparator(a, b, orderBy);
-}
+//icons
+import RotateLeftIcon from "@material-ui/icons/RotateLeft";
 
-function stableSort(array, comparator) {
-  const stabilizedThis = array.map((el, index) => [el, index]);
-  stabilizedThis.sort((a, b) => {
-    const order = comparator(a[0], b[0]);
-    if (order !== 0) return order;
-    return a[1] - b[1];
+const style = {
+  avatar: {
+    width: "300px",
+    height: "300px",
+    visibility: "hidden",
+  },
+  icon: {
+    margin: "15% 0 5% 23%",
+    width: "50%",
+    height: "50%",
+  },
+  link: {
+    height: "33,3%",
+  },
+  gridContainer: {
+    width: "100%",
+    height: "100%",
+    flexDirection: "column",
+  },
+  gridItem: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+  },
+  optionsModules: {
+    flex: 1,
+    boxShadow: "inset 0 2px 0 0 black",
+    color: "black",
+  },
+};
+
+const Home = (props) => {
+  let [stateModules, changeStateModules] = useState({
+    moduleI: {
+      class: "hoverAllow",
+      face: "front",
+      option: 0,
+      query: "",
+    },
+    modulePro: {
+      class: "hoverAllow",
+      face: "front",
+      option: 0,
+      query: "",
+    },
+    moduleC: {
+      class: "hoverAllow",
+      face: "front",
+      option: 0,
+      query: "",
+    },
+    moduleP: {
+      class: "hoverAllow",
+      face: "front",
+      option: 0,
+      query: "",
+    },
+    moduleE: {
+      class: "hoverAllow",
+      face: "front",
+      option: 0,
+      query: "",
+    },
+    moduleT: {
+      class: "hoverAllow",
+      face: "front",
+      option: 0,
+      query: "",
+    },
+    modulePr: {
+      class: "hoverAllow",
+      face: "front",
+      option: 0,
+      query: "",
+    },
+    moduleU: {
+      class: "hoverAllow",
+      face: "front",
+      option: 0,
+      query: "",
+    },
+    moduleV: {
+      class: "hoverAllow",
+      face: "front",
+      option: 0,
+      query: "",
+    },
   });
-  return stabilizedThis.map((el) => el[0]);
-}
 
-const headCells = [
-  {
-    id: "name",
-    numeric: false,
-    disablePadding: true,
-    label: "Descripción",
-  },
-  { id: "calories", numeric: true, disablePadding: false, label: "Cantidad" },
-];
+  const moduleSelected = (id, value, face, query) => {
+    let stateModulesTemp = {};
 
-function EnhancedTableHead(props) {
-  const {
-    classes,
-    onSelectAllClick,
-    order,
-    orderBy,
-    numSelected,
-    rowCount,
-    onRequestSort,
-  } = props;
-  const createSortHandler = (property) => (event) => {
-    onRequestSort(event, property);
-  };
-
-  return (
-    <TableHead>
-      <TableRow>
-        <TableCell padding="checkbox">
-          <Checkbox
-            indeterminate={numSelected > 0 && numSelected < rowCount}
-            checked={rowCount > 0 && numSelected === rowCount}
-            onChange={onSelectAllClick}
-            inputProps={{ "aria-label": "select all desserts" }}
-          />
-        </TableCell>
-        {headCells.map((headCell) => (
-          <TableCell
-            key={headCell.id}
-            align={headCell.numeric ? "right" : "left"}
-            padding={headCell.disablePadding ? "none" : "default"}
-            sortDirection={orderBy === headCell.id ? order : false}
-          >
-            <TableSortLabel
-              active={orderBy === headCell.id}
-              direction={orderBy === headCell.id ? order : "asc"}
-              onClick={createSortHandler(headCell.id)}
-            >
-              {headCell.label}
-              {orderBy === headCell.id ? (
-                <span className={classes.visuallyHidden}>
-                  {order === "desc" ? "sorted descending" : "sorted ascending"}
-                </span>
-              ) : null}
-            </TableSortLabel>
-          </TableCell>
-        ))}
-      </TableRow>
-    </TableHead>
-  );
-}
-
-EnhancedTableHead.propTypes = {
-  classes: PropTypes.object.isRequired,
-  numSelected: PropTypes.number.isRequired,
-  onRequestSort: PropTypes.func.isRequired,
-  onSelectAllClick: PropTypes.func.isRequired,
-  order: PropTypes.oneOf(["asc", "desc"]).isRequired,
-  orderBy: PropTypes.string.isRequired,
-  rowCount: PropTypes.number.isRequired,
-};
-
-const useToolbarStyles = makeStyles((theme) => ({
-  root: {
-    paddingLeft: theme.spacing(2),
-    paddingRight: theme.spacing(1),
-  },
-  highlight:
-    theme.palette.type === "light"
-      ? {
-          color: theme.palette.secondary.main,
-          backgroundColor: lighten(theme.palette.secondary.light, 0.85),
-        }
-      : {
-          color: theme.palette.text.primary,
-          backgroundColor: theme.palette.secondary.dark,
-        },
-  title: {
-    flex: "1 1 100%",
-  },
-}));
-
-const EnhancedTableToolbar = (props) => {
-  const classes = useToolbarStyles();
-  const { numSelected, pointsOperation, selectedAssignamentElements } = props;
-
-  //PointOperation
-  let [selectedPointOperation, setSelectedPointOperation] = useState(null);
-
-  return (
-    <Toolbar
-      className={clsx(classes.root, {
-        [classes.highlight]: numSelected > 0,
-      })}
-    >
-      {numSelected > 0 ? (
-        <Grid container spacing={2}>
-          <Grid item xs={6} md={6}>
-            <Typography
-              className={classes.title}
-              color="inherit"
-              variant="subtitle1"
-              component="div"
-            >
-              {numSelected} elementos seleccionados
-            </Typography>
-          </Grid>
-          <Grid item xs={6} md={6}>
-            <Autocomplete
-              id="select_point_operation"
-              value={selectedPointOperation}
-              onChange={(event, newDataPointOperation) => {
-                setSelectedPointOperation(newDataPointOperation);
-              }}
-              options={pointsOperation}
-              getOptionLabel={(option) => option.address}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Punto de Operación"
-                  variant="outlined"
-                />
-              )}
-            />
-          </Grid>
-        </Grid>
-      ) : (
-        <Typography
-          className={classes.title}
-          variant="h6"
-          id="tableTitle"
-          component="div"
-        >
-          Nutrition
-        </Typography>
-      )}
-      {numSelected > 0 ? (
-        <Tooltip title="Delete">
-          <IconButton aria-label="delete" onClick={selectedAssignamentElements}>
-            <DeleteIcon />
-          </IconButton>
-        </Tooltip>
-      ) : (
-        <Tooltip title="Filter list">
-          <IconButton aria-label="filter list">
-            <FilterListIcon />
-          </IconButton>
-        </Tooltip>
-      )}
-    </Toolbar>
-  );
-};
-
-EnhancedTableToolbar.propTypes = {
-  numSelected: PropTypes.number.isRequired,
-  pointsOperation: PropTypes.arrayOf(
-    PropTypes.shape({
-      description: PropTypes.string.isRequired,
-      quantity: PropTypes.string.isRequired,
-    })
-  ).isRequired,
-};
-
-const useStyles = makeStyles((theme) => ({
-  root: {
-    width: "100%",
-  },
-  paper: {
-    width: "100%",
-    marginBottom: theme.spacing(2),
-  },
-  table: {
-    minWidth: 750,
-  },
-  visuallyHidden: {
-    border: 0,
-    clip: "rect(0 0 0 0)",
-    height: 1,
-    margin: -1,
-    overflow: "hidden",
-    padding: 0,
-    position: "absolute",
-    top: 20,
-    width: 1,
-  },
-}));
-
-const EnhancedTable = (props) => {
-  const classes = useStyles();
-  const [order, setOrder] = useState("asc");
-  const [orderBy, setOrderBy] = useState("calories");
-  const [selected, setSelected] = useState([]);
-  const [page, setPage] = useState(0);
-  const [dense, setDense] = useState(false);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
-
-  let [pointsOperation, setDataPointsOperation] = useState({ data: [] });
-  const [itemsSelected, setItemsSelected] = useState([])
-  //PointOperation
-  let [selectedPointOperation, setSelectedPointOperation] = useState(null);
-
-  const [rows, setRows] = useState([
-    {
-      name: "Objeto de prueba",
-      calories: 2,
-      active: false,
-      carbs: 67,
-      protein: 4.3,
-    },
-    {
-      name: "Objeto de prueba 2",
-      calories: 2,
-      active: false,
-      carbs: 67,
-      protein: 4.3,
-    },
-    {
-      name: "Objeto de prueba 3",
-      calories: 2,
-      active: false,
-      carbs: 67,
-      protein: 4.3,
-    },
-  ]);
-
-  //getData
-  const fetchMyAPI = useCallback(async () => {
-    //getDataPointsOperation
-    let objectQuery = props.firebase.db
-      .collection("PointsOperation")
-      .orderBy("city");
-
-    const snapshot = await objectQuery.get();
-
-    const arrayPointsOperation = snapshot.docs.map((doc) => {
-      let data = doc.data();
-      let id = doc.id;
-      return { id, ...data };
-    });
-
-    setDataPointsOperation({
-      data: arrayPointsOperation,
-    });
-  }, []);
-
-  useEffect(() => {
-    fetchMyAPI();
-  }, [fetchMyAPI]);
-
-  const handleRequestSort = (event, property) => {
-    const isAsc = orderBy === property && order === "asc";
-    setOrder(isAsc ? "desc" : "asc");
-    setOrderBy(property);
-  };
-
-  const handleSelectAllClick = (event) => {
-    if (event.target.checked) {
-      const newSelecteds = rows.map((n) => n.name);
-      setSelected(newSelecteds);
-      return;
-    }
-    setSelected([]);
-  };
-
-  const handleClick = (event, name) => {
-    const selectedIndex = selected.indexOf(name);
-    let newSelected = [];
-
-    if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, name);
-    } else if (selectedIndex === 0) {
-      newSelected = newSelected.concat(selected.slice(1));
-    } else if (selectedIndex === selected.length - 1) {
-      newSelected = newSelected.concat(selected.slice(0, -1));
-    } else if (selectedIndex > 0) {
-      newSelected = newSelected.concat(
-        selected.slice(0, selectedIndex),
-        selected.slice(selectedIndex + 1)
-      );
+    if (id === "moduleI") {
+      stateModulesTemp = stateModules.moduleI;
+    } else if (id === "moduleC") {
+      stateModulesTemp = stateModules.moduleC;
+    } else if (id === "moduleP") {
+      stateModulesTemp = stateModules.moduleP;
+    } else if (id === "moduleE") {
+      stateModulesTemp = stateModules.moduleE;
+    } else if (id === "moduleT") {
+      stateModulesTemp = stateModules.moduleT;
+    } else if (id === "modulePr") {
+      stateModulesTemp = stateModules.modulePr;
+    } else {
+      stateModulesTemp = stateModules.moduleU;
     }
 
-    setSelected(newSelected);
+    console.log(stateModulesTemp.query);
+
+    if (face === "front") {
+      stateModulesTemp.class = "selectOptionBack";
+      stateModulesTemp.face = "back";
+      stateModulesTemp.option = value;
+      stateModulesTemp.query = query;
+    } else if (face === "back" && stateModulesTemp.query === "add") {
+      stateModulesTemp.class = "selectOptionDown";
+      stateModulesTemp.face = "down";
+      stateModulesTemp.option = value;
+    } else if (face === "back" && stateModulesTemp.query === "modify") {
+      stateModulesTemp.class = "selectOptionDown";
+      stateModulesTemp.face = "down";
+      stateModulesTemp.option = value;
+    } else {
+    }
+
+    console.log(stateModulesTemp);
+
+    changeStateModules((prev) => ({
+      ...prev,
+      [id]: stateModulesTemp,
+    }));
+
+    resetSelected(id);
   };
 
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  const handleChangeDense = (event) => {
-    setDense(event.target.checked);
-  };
-
-  const isSelected = (name) => selected.indexOf(name) !== -1;
-
-  const handleChange = (event, index) => {
-    console.log(event.target.checked)
-    let tempItemsSelected = itemsSelected;
-    tempItemsSelected[index] = event.target.checked
-    setItemsSelected(tempItemsSelected);
-    let tempRows = rows;
-    tempRows[index].active = event.target.checked
-    setRows(tempRows)
-  };
-
-  const emptyRows =
-    rowsPerPage - Math.min(rowsPerPage, rows.length - page * rowsPerPage);
-
-  const validation = (e) => {
-    let tempRows = rows;
-    let tempSelected = selected;
-    for (let i = 0; i < selected.length; i++) {
-      for (let j = 0; j < rows.length; j++) {
-        if (selected[i] === rows[j].name) {
-          tempSelected.splice(j, 1);
-          tempRows.splice(j, 1);
-        }
+  const resetSelected = (id) => {
+    const namesModules = [
+      "moduleI",
+      "moduleC",
+      "moduleP",
+      "moduleE",
+      "moduleT",
+      "modulePr",
+      "moduleU",
+      "moduleV",
+    ];
+    let stateModulesReset = { class: "hoverAllow", face: "front", optiton: 0 };
+    for (let i = 0; i < namesModules.length; i++) {
+      if (id !== namesModules[i]) {
+        changeStateModules((prev) => ({
+          ...prev,
+          [namesModules[i]]: stateModulesReset,
+        }));
       }
     }
-    setSelected(tempSelected);
-    console.log(tempRows)
-    setRows(tempRows);
   };
 
   return (
-    <div className={classes.root}>
-      <Paper className={classes.paper}>
-        
-        <EnhancedTableToolbar
-          numSelected={selected.length}
-          pointsOperation={pointsOperation.data}
-          selectedAssignamentElements={validation}
-        />
-        <TableContainer>
-          <Table
-            className={classes.table}
-            aria-labelledby="tableTitle"
-            aria-label="enhanced table"
-          >
-            <TableBody>
-              {rows.map((row, index) => {
-                return (
-                  <TableRow
-                    hover
-                    disable={row.active}
-                    onClick={(event) => handleClick(event, row.name)}
-                    role="checkbox"
-                    aria-checked={row.active}
-                    tabIndex={-1}
-                    key={row.name}
-                    selected={row.active}
-                  >
-                    <TableCell padding="checkbox">
-                      <Checkbox
-                        checked={row.active}
-                        onChange={(event)=>handleChange(event, index)}
-                      />
-                    </TableCell>
-                    <TableCell
-                      component="th"
-                      scope="row"
-                      padding="none"
-                    >
-                      {row.name}
-                    </TableCell>
-                    <TableCell align="right">{row.calories}</TableCell>
-                  </TableRow>
-                );
-              })}
-              {emptyRows > 0 && (
-                <TableRow style={{ height: (dense ? 33 : 53) * emptyRows }}>
-                  <TableCell colSpan={6} />
-                </TableRow>
+    <div id="dContenedor" class="dContenedor">
+      <Tooltip title="Resetear Modulos" aria-label="Resetear Modulos">
+        <Fab
+          aria-label="Resetear"
+          style={{
+            position: "fixed",
+            bottom: 100,
+            right: 25,
+            zIndex: 1000,
+            backgroundColor: "#2E3B55",
+            color: "white",
+          }}
+          onClick={() => {
+            resetSelected("");
+          }}
+        >
+          <RotateLeftIcon />
+        </Fab>
+      </Tooltip>
+      <div class="modules" id="moduleI">
+        <div id="dInventarios" class={stateModules.moduleI.class}>
+          <Avatar src={imgGuide} style={style.avatar} variant="square" />
+          <div class="lado adelante">
+            <Avatar src={iconInventario} style={style.icon} variant="square" />
+            <h1>INVENTARIO</h1>
+          </div>
+          <div class="lado arriba">
+            <Grid container style={style.gridContainer}>
+              <ItemOptions
+                title="Agregar Elemento"
+                onclick={() =>
+                  moduleSelected("moduleI", 1, stateModules.moduleI.face, "add")
+                }
+              />
+              <ItemOptions
+                title="Consultar Elemento"
+                onclick={() =>
+                  moduleSelected(
+                    "moduleI",
+                    2,
+                    stateModules.moduleI.face,
+                    "search"
+                  )
+                }
+              />
+              <ItemOptions
+                title="Modificar Elemento"
+                onclick={() =>
+                  moduleSelected(
+                    "moduleI",
+                    3,
+                    stateModules.moduleI.face,
+                    "modify"
+                  )
+                }
+              />
+            </Grid>
+          </div>
+          <div class="lado atras">
+            <Grid container style={style.gridContainer}>
+              <ItemOptions
+                title="Materia Prima"
+                onclick={
+                  stateModules.moduleI.query === "add"
+                    ? () =>
+                        moduleSelected("moduleI", 1, stateModules.moduleI.face)
+                    : ""
+                }
+                href={
+                  stateModules.moduleI.query !== "add"
+                    ? `/inventarios/mostrar/materia_prima/${stateModules.moduleI.query}`
+                    : ""
+                }
+              />
+              <ItemOptions
+                title="Herramientas y Equipos"
+                onclick={
+                  stateModules.moduleI.query === "add"
+                    ? () =>
+                        moduleSelected("moduleI", 2, stateModules.moduleI.face)
+                    : ""
+                }
+                href={
+                  stateModules.moduleI.query !== "add"
+                    ? `/inventarios/mostrar/herramientas_y_equipos/${stateModules.moduleI.query}`
+                    : ""
+                }
+              />
+              <ItemOptions
+                title="Insumos"
+                onclick={
+                  stateModules.moduleI.query === "add"
+                    ? () =>
+                        moduleSelected("moduleI", 3, stateModules.moduleI.face)
+                    : ""
+                }
+                href={
+                  stateModules.moduleI.query !== "add"
+                    ? `/inventarios/mostrar/insumos/${stateModules.moduleI.query}`
+                    : ""
+                }
+              />
+              <ItemOptions
+                title="Productos en proceso"
+                href={
+                  stateModules.moduleI.query !== "add"
+                    ? `/inventarios/mostrar/productos_en_proceso/${stateModules.moduleI.query}`
+                    : "/inventarios/agregar/productos_en_proceso"
+                }
+              />
+              {stateModules.moduleI.option !== 1 &&
+              stateModules.moduleI.face === "back" ? (
+                <ItemOptions
+                  title="Productos en Embalaje"
+                  href={`/inventarios/mostrar/productos_en_embalaje/${stateModules.moduleI.query}`}
+                />
+              ) : (
+                ""
               )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
-          component="div"
-          count={rows.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onChangePage={handleChangePage}
-          onChangeRowsPerPage={handleChangeRowsPerPage}
-        />
-      </Paper>
+              <ItemOptions
+                title="Implementos"
+                onclick={
+                  stateModules.moduleI.query === "add"
+                    ? () =>
+                        moduleSelected("moduleI", 4, stateModules.moduleI.face)
+                    : ""
+                }
+                href={
+                  stateModules.moduleI.query !== "add"
+                    ? `/inventarios/mostrar/implementos/${stateModules.moduleI.query}`
+                    : ""
+                }
+              />
+            </Grid>
+          </div>
+          <div class="lado abajo">
+            <Grid container style={style.gridContainer}>
+              <ItemOptions
+                title="Agregar por medio de factura"
+                href={`/inventarios/agregar/${
+                  stateModules.moduleI.option === 1
+                    ? "materia_prima"
+                    : stateModules.moduleI.option === 2
+                    ? "herramientas_y_equipos"
+                    : stateModules.moduleI.option === 3
+                    ? "insumos"
+                    : "implementos"
+                }/factura`}
+              />
+              <ItemOptions
+                title="Agregar de forma independiente"
+                href={`/inventarios/agregar/${
+                  stateModules.moduleI.option === 1
+                    ? "materia_prima"
+                    : stateModules.moduleI.option === 2
+                    ? "herramientas_y_equipos"
+                    : stateModules.moduleI.option === 3
+                    ? "insumos"
+                    : "implementos"
+                }/independiente`}
+              />
+            </Grid>
+          </div>
+        </div>
+      </div>
+      <div class="modules" id="modulePro">
+        <div id="dProcesos" class={stateModules.modulePro.class}>
+          <Avatar src={imgGuide} style={style.avatar} variant="square" />
+          <div class="lado adelante">
+            <Avatar src={iconProcess} style={style.icon} variant="square" />
+            <h1>PROCESOS</h1>
+          </div>
+          <div class="lado arriba">
+            <Grid container style={style.gridContainer}>
+              <ItemOptions
+                title="Agregar Proceso"
+                href="/procesos/agregar/new"
+              />
+              <ItemOptions
+                title="Consultar Proceso"
+                href="/procesos/mostrar/search"
+              />
+              <ItemOptions
+                title="Modificar Proceso"
+                href="/procesos/mostrar/modify"
+              />
+            </Grid>
+          </div>
+          <div class="lado atras"></div>
+          <div class="lado abajo"></div>
+        </div>
+      </div>
+      <div class="modules" id="moduleC">
+        <div id="dClient" class={stateModules.moduleC.class}>
+          <Avatar src={imgGuide} style={style.avatar} variant="square" />
+          <div class="lado adelante">
+            <Avatar src={iconClients} style={style.icon} variant="square" />
+            <h1>CLIENTES</h1>
+          </div>
+          <div class="lado arriba">
+            <Grid container style={style.gridContainer}>
+              <ItemOptions
+                title="Agregar Cliente"
+                onclick={() =>
+                  moduleSelected("moduleC", 1, stateModules.moduleC.face, "add")
+                }
+              />
+              <ItemOptions
+                title="Consultar Cliente"
+                onclick={() =>
+                  moduleSelected(
+                    "moduleC",
+                    2,
+                    stateModules.moduleC.face,
+                    "search"
+                  )
+                }
+              />
+              <ItemOptions
+                title="Modificar Cliente"
+                onclick={() =>
+                  moduleSelected(
+                    "moduleC",
+                    3,
+                    stateModules.moduleC.face,
+                    "modify"
+                  )
+                }
+              />
+            </Grid>
+          </div>
+          <div class="lado atras">
+            <Grid container style={style.gridContainer}>
+              <ItemOptions
+                title="Empresa"
+                href={
+                  stateModules.moduleC.query === "add"
+                    ? "/clientes/agregar/business"
+                    : `/clientes/mostrar/business/${stateModules.moduleC.query}`
+                }
+              />
+              <ItemOptions
+                title="Persona Natural"
+                href={
+                  stateModules.moduleC.query === "add"
+                    ? "/clientes/agregar/people"
+                    : `/clientes/mostrar/people/${stateModules.moduleC.query}`
+                }
+              />
+            </Grid>
+          </div>
+          <div class="lado abajo">
+            <Grid container style={style.gridContainer}>
+              <ItemOptions
+                title="Agregar por medio de factura"
+                href={`/inventarios/agregar/${
+                  stateModules.moduleC.option === 1
+                    ? "materia_prima"
+                    : stateModules.moduleC.option === 2
+                    ? "herramientas_y_equipos"
+                    : "insumos"
+                }/factura`}
+              />
+              <ItemOptions
+                title="Agregar de forma independiente"
+                href={`/inventarios/agregar/${
+                  stateModules.moduleC.option === 1
+                    ? "materia_prima"
+                    : stateModules.moduleC.option === 2
+                    ? "herramientas_y_equipos"
+                    : "insumos"
+                }/independiente`}
+              />
+            </Grid>
+          </div>
+        </div>
+      </div>
+      <div class="modules" id="moduleP">
+        <div id="dPuntosOperacion" class={stateModules.moduleP.class}>
+          <Avatar src={imgGuide} style={style.avatar} variant="square" />
+          <div class="lado adelante">
+            <Avatar
+              src={iconPuntoOperacion}
+              style={style.icon}
+              variant="square"
+            />
+            <h2>PUNTOS OPERACIÓN</h2>
+          </div>
+          <div class="lado arriba">
+            <Grid container style={style.gridContainer}>
+              <ItemOptions
+                title="Agregar Punto de Operación"
+                onclick={() =>
+                  moduleSelected("moduleP", 1, stateModules.moduleP.face, "add")
+                }
+              />
+              <ItemOptions
+                title="Consultar Punto de Operación"
+                onclick={() =>
+                  moduleSelected(
+                    "moduleP",
+                    2,
+                    stateModules.moduleP.face,
+                    "search"
+                  )
+                }
+              />
+              <ItemOptions
+                title="Modificar Punto de Operación"
+                onclick={() =>
+                  moduleSelected(
+                    "moduleP",
+                    3,
+                    stateModules.moduleP.face,
+                    "modify"
+                  )
+                }
+              />
+            </Grid>
+          </div>
+          <div class="lado atras">
+            <Grid container style={style.gridContainer}>
+              <ItemOptions
+                title="Cliente"
+                href={
+                  stateModules.moduleP.query === "add"
+                    ? "/puntos_operacion/agregar/client"
+                    : stateModules.moduleP.query === "search"
+                    ? "/puntos_operacion/mostrar/client/search"
+                    : "/puntos_operacion/mostrar/client/modify"
+                }
+              />
+              <ItemOptions
+                title="Interno"
+                href={
+                  stateModules.moduleP.query === "add"
+                    ? "/puntos_operacion/agregar/internal"
+                    : stateModules.moduleP.query === "search"
+                    ? "/puntos_operacion/mostrar/internal/search"
+                    : "/puntos_operacion/mostrar/internal/modify"
+                }
+              />
+              {stateModules.moduleP.query === "search" ? (
+                <ItemOptions
+                  title="Todos"
+                  href="/puntos_operacion/mostrar/all/search"
+                />
+              ) : (
+                ""
+              )}
+            </Grid>
+          </div>
+          <div class="lado abajo"></div>
+        </div>
+      </div>
+      <div class="modules" id="moduleE">
+        <div id="dEmpleados" class={stateModules.moduleE.class}>
+          <Avatar src={imgGuide} style={style.avatar} variant="square" />
+          <div class="lado adelante">
+            <Avatar src={iconEmpleado} style={style.icon} variant="square" />
+            <h1>EMPLEADOS</h1>
+          </div>
+          <div id="mEar" class="lado arriba">
+            <Grid container style={style.gridContainer}>
+              <ItemOptions title="Agregar Empleado" href="/empleados/add" />
+              <ItemOptions
+                title="Consultar Empleado"
+                href="/empleados/mostrar/search"
+              />
+              <ItemOptions
+                title="Modificar Empleado"
+                onclick={() =>
+                  moduleSelected(
+                    "moduleE",
+                    3,
+                    stateModules.moduleE.face,
+                    "modify"
+                  )
+                }
+              />
+            </Grid>
+          </div>
+          <div id="mIat" class="lado atras">
+            <Grid container style={style.gridContainer}>
+              <ItemOptions
+                title="Datos"
+                href="/empleados/mostrar/modify/data"
+              />
+              <ItemOptions
+                title="Asignaciones"
+                href="/empleados/mostrar/modify/assignment"
+              />
+            </Grid>
+          </div>
+          <div id="mIab" class="lado abajo"></div>
+        </div>
+      </div>
+      <div class="modules" id="moduleT">
+        <div id="dTraslados" class={stateModules.moduleT.class}>
+          <Avatar src={imgGuide} style={style.avatar} variant="square" />
+          <div class="lado adelante">
+            <Avatar src={iconTraslados} style={style.icon} variant="square" />
+            <h1>TRASLADOS</h1>
+          </div>
+          <div class="lado arriba">
+            <Grid container style={style.gridContainer}>
+              <ItemOptions
+                title="Agregar Traslado"
+                href="/traslados/agregar/"
+              />
+              <ItemOptions
+                title="Consultar Traslado"
+                href="/traslados/mostrar/search"
+              />
+            </Grid>
+          </div>
+          <div id="mIat" class="lado atras"></div>
+          <div id="mIab" class="lado abajo"></div>
+        </div>
+      </div>
+      <div class="modules" id="modulePr">
+        <div id="dProveedores" class={stateModules.modulePr.class}>
+          <Avatar src={imgGuide} style={style.avatar} variant="square" />
+          <div class="lado adelante">
+            <Avatar src={iconProveedores} style={style.icon} variant="square" />
+            <h1>PROVEEDORES</h1>
+          </div>
+          <div class="lado arriba">
+            <Grid container style={style.gridContainer}>
+              <ItemOptions
+                title="Agregar Proveedor"
+                onclick={() =>
+                  moduleSelected(
+                    "modulePr",
+                    1,
+                    stateModules.modulePr.face,
+                    "add"
+                  )
+                }
+              />
+              <ItemOptions
+                title="Consultar Proveedor"
+                onclick={() =>
+                  moduleSelected(
+                    "modulePr",
+                    2,
+                    stateModules.modulePr.face,
+                    "search"
+                  )
+                }
+              />
+              <ItemOptions
+                title="Modificar Proveedor"
+                onclick={() =>
+                  moduleSelected(
+                    "modulePr",
+                    3,
+                    stateModules.modulePr.face,
+                    "modify"
+                  )
+                }
+              />
+            </Grid>
+          </div>
+          <div id="mIat" class="lado atras">
+            {stateModules.modulePr.query === "add" ? (
+              <Grid container style={style.gridContainer}>
+                <ItemOptions
+                  title="Empresa"
+                  href={`/proveedor/agregar/business`}
+                />
+                <ItemOptions
+                  title="Presona Natural"
+                  href={`/proveedor/agregar/people`}
+                />
+              </Grid>
+            ) : (
+              <Grid container style={style.gridContainer}>
+                <ItemOptions
+                  title="Empresa"
+                  href={`/proveedor/mostrar/business/${stateModules.modulePr.query}`}
+                />
+                <ItemOptions
+                  title="Presona Natural"
+                  href={`/proveedor/mostrar/people/${stateModules.modulePr.query}`}
+                />
 
-      <Paper>
-        <Button onClick={validation}>Pruebas</Button>
-      </Paper>
+                <ItemOptions
+                  title="Todos"
+                  href={`/proveedor/mostrar/all/${stateModules.modulePr.query}`}
+                />
+              </Grid>
+            )}
+          </div>
+          <div id="mIab" class="lado abajo"></div>
+        </div>
+      </div>
+      <div class="modules" id="moduleU">
+        <div id="dUsuarios" class={stateModules.moduleU.class}>
+          <Avatar src={imgGuide} style={style.avatar} variant="square" />
+          <div class="lado adelante">
+            <Avatar src={iconUsuarios} style={style.icon} variant="square" />
+            <h1>USUARIOS</h1>
+          </div>
+          <div class="lado arriba">
+            <Grid container style={style.gridContainer}>
+              <ItemOptions title="Agregar Usuario" href={`/usuarios/agregar`} />
+              <ItemOptions
+                title="Mostrar Usuarios"
+                href={`/usuarios/mostrar/search`}
+              />
+              <ItemOptions
+                title="Modificar Usuarios"
+                href={`/usuarios/mostrar/modify`}
+              />
+            </Grid>
+          </div>
+          <div id="mIat" class="lado atras"></div>
+          <div id="mIab" class="lado abajo"></div>
+        </div>
+      </div>
+      <div class="modules" id="moduleV">
+        <div id="dReportes" class={stateModules.moduleV.class}>
+          <Avatar src={imgGuide} style={style.avatar} variant="square" />
+          <div class="lado adelante">
+            <Avatar src={iconVehiculos} style={style.icon} variant="square" />
+            <h1>VEHICULOS</h1>
+          </div>
+          <div class="lado arriba">
+            <Grid container style={style.gridContainer}>
+              <ItemOptions
+                title="Agregar Vehiculo"
+                href="/vehiculos/agregar/"
+              />
+              <ItemOptions
+                title="Consultar Vehiculo"
+                href="/vehiculos/mostrar/search"
+              />
+              <ItemOptions
+                title="Modificar Vehiculo"
+                href="/vehiculos/mostrar/modify"
+              />
+            </Grid>
+          </div>
+          <div id="mIat" class="lado atras"></div>
+          <div id="mIab" class="lado abajo"></div>
+        </div>
+      </div>
     </div>
   );
 };
 
-export default consumerFirebase(EnhancedTable);
-
-/*
-<EnhancedTableHead
-              classes={classes}
-              numSelected={selected.length}
-              order={order}
-              orderBy={orderBy}
-              onSelectAllClick={handleSelectAllClick}
-              onRequestSort={handleRequestSort}
-              rowCount={rows.length}
-            />
-*/
+export default Home;

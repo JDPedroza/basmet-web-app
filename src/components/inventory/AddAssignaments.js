@@ -72,35 +72,35 @@ const AddAssignamentsElemensts = (props) => {
     //getDataElements
     const { id } = props.match.params;
     let data = await props.firebase.db
-      .collection("ModifyUserInventory")
+      .collection("Reports")
       .doc(id)
       .get();
-    let jsonDataModifyUserInventory = data.data();
+    let dataReport = data.data();
     let arrayElementsAdd = [];
     let tempItemsSelected = [];
     let tempQuantityElementsSelected = [];
 
     for (
       let i = 0;
-      i < jsonDataModifyUserInventory.add_elements_inventary.data.length;
+      i < dataReport.data.items.length;
       i++
     ) {
       let jsonFormatElementAdd = {
-        nid: jsonDataModifyUserInventory.add_elements_inventary.data[i].nid,
+        nid: dataReport.data.items[i].nid,
         description:
-          jsonDataModifyUserInventory.add_elements_inventary.data[i]
+          dataReport.data.items[i]
             .description,
         quantity:
-          jsonDataModifyUserInventory.add_elements_inventary.data[i].quantity,
+          dataReport.data.items[i].quantity,
         disable: false,
         quantity_assignament: 0,
         quantity_avaible:
-          jsonDataModifyUserInventory.add_elements_inventary.data[i].quantity,
+          dataReport.data.items[i].quantity,
       };
       arrayElementsAdd.push(jsonFormatElementAdd);
       tempItemsSelected.push(false);
       tempQuantityElementsSelected.push(
-        jsonDataModifyUserInventory.add_elements_inventary.data[i].quantity
+        dataReport.data.items[i].quantity
       );
     }
 
@@ -320,8 +320,6 @@ const AddAssignamentsElemensts = (props) => {
 
     setSelectedPointOperation(null);
     setNumbreItemsSelected(0);
-
-    console.log(assignmentsPointOperation)
   };
 
   const saveDataFirebase = async () => {
@@ -346,10 +344,19 @@ const AddAssignamentsElemensts = (props) => {
       } else if (table === "herramientas_y_equipos") {
         attribute = "tools_equipment";
         tempArrayInventory = dataElementsPointOperation.tools_equipment;
-      } else {
+      } else if (table === "insumos"){
         attribute = "supplies";
         tempArrayInventory = dataElementsPointOperation.supplies;
-      }
+      } else if (table === "implementos"){
+        attribute = "implements";
+        tempArrayInventory = dataElementsPointOperation.supplies;
+      } else if (table === "productos_en_proceso"){
+        attribute = "items_process";
+        tempArrayInventory = dataElementsPointOperation.supplies;
+      } else if (table === "productos_en_embalaje"){
+        attribute = "items_packaging";
+        tempArrayInventory = dataElementsPointOperation.supplies;
+      } 
 
       //validamos si ya tiene información
       if (tempArrayInventory.length !== 0) {
@@ -460,11 +467,15 @@ const AddAssignamentsElemensts = (props) => {
       doc = "RawMaterials";
     } else if (table === "herramientas_y_equipos") {
       doc = "ToolsEquipment";
-    } else if (table === "supplies"){
-      doc = "Supplies";
-    } else  {
+    } else if (table === "insumos"){
+      doc = "Supplies"
+    } else if (table === "implementos"){
       doc = "Implements"
-    }
+    } else if (table === "productos_en_proceso"){
+      doc = "ItemsProcess"
+    } else if (table === "productos_en_embalaje"){
+      doc = "ItemsPackaging"
+    } 
 
     //obtenemos la data del elemento guardado
     let data = await props.firebase.db.collection("Inventories").doc(doc).get();
@@ -540,23 +551,7 @@ const AddAssignamentsElemensts = (props) => {
           open: true,
           mensaje: `ACTUALIZACIÓN DE ASIGNACIONES COMPLETADA`,
         });
-      });
-
-    let jsonFormatModifyUser={
-      user: sesion,
-      date: Date(),
-      type: "assignmentElementsPointOperations",
-      data: assignmentsPointOperation,
-    }
-
-    await props.firebase.db
-      .collection("ModifyUserInventory")
-      .add(jsonFormatModifyUser)
-      .then((success) => {
         props.history.replace(`/inventarios/mostrar/${table}/search`);
-      })
-      .catch((error) => {
-        console.log("Error:", error);
       });
 
   };
@@ -567,7 +562,7 @@ const AddAssignamentsElemensts = (props) => {
         <Grid container spacing={2}>
           <Grid item xs={12} md={8}>
             <Breadcrumbs aria-label="breadcrumbs">
-              <Link color="inherit" style={style.link} href="/home">
+              <Link color="inherit" style={style.link} href="/">
                 <HomeIcon />
                 Principal
               </Link>
@@ -578,6 +573,10 @@ const AddAssignamentsElemensts = (props) => {
                   ? "Materia Prima"
                   : table === "herramientas_y_equipos"
                   ? "Herramientas y Equipos"
+                  : table === "productos_en_proceso"
+                  ? "Productos en Proceso"
+                  : table === "productos_en_embalaje"
+                  ? "Productos en Embalaje"
                   : table === "insumos"
                   ? "Insumos"
                   : "Implementos"

@@ -216,7 +216,7 @@ const ControlledOpenSelect = (props) => {
       .collection("Providers")
       .add(provider)
       .then((success) => {
-        props.history.push("/home");
+        props.history.push("/");
       })
       .catch((error) => {
         console.log("error: ", error);
@@ -235,7 +235,7 @@ const ControlledOpenSelect = (props) => {
         <Grid container spacing={3}>
           <Grid item xs={12} md={8}>
             <Breadcrumbs aria-label="breadcrumbs">
-              <Link color="inherit" style={style.link} href="/home">
+              <Link color="inherit" style={style.link} href="/">
                 <HomeIcon />
                 Principal
               </Link>

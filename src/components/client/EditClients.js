@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Container,
   Paper,
@@ -12,26 +12,25 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  FormLabel,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
 } from "@material-ui/core";
-import { consumerFirebase } from "../../server";
+
+//utils
 import { crearKeyword } from "../../sesion/actions/keyWords";
 
-//temp
+//icons
 import HomeIcon from "@material-ui/icons/Home";
+import { consumerFirebase } from "../../server";
 
 const style = {
   paper: {
-    marginTop: 8,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
+    padding: 20,
+  },
+  gridForm: {
+    width: "100%",
+    padding: 20,
   },
   form: {
-    width: "100%",
+    marginTop: 2,
     padding: 20,
   },
   submit: {
@@ -44,80 +43,49 @@ const style = {
   },
 };
 
-const EditProvider = (props) => {
+const EditClient = (props) => {
+  const { type, id } = props.match.params;
   const [open, setOpen] = useState(false);
 
-  let [provider, changeDataProvider] = useState({
-    business: "",
+  let [client, changeDataClient] = useState({
+    type_client: "",
     type_document: "",
     nid: "",
+    name: "",
     country: "",
     city: "",
+    business: "",
     address: "",
     email: "",
     phone: "",
     contact_name: "",
     contact_email: "",
     contact_phone: "",
-    keywords: "",
-    type_provider: "business",
+    points_operation: [],
+    keywords: [],
   });
 
-  useEffect(async () => {
-    const { id } = props.match.params;
-    const providerCollection = props.firebase.db.collection("Providers");
-    const result = await providerCollection.doc(id).get();
-
-    loadDataProvider(result.data());
+  const fetchMyAPI = useCallback(async () => {
+    console.log(id);
+    let snapshotClient = await props.firebase.db
+      .collection("Clients")
+      .doc(id)
+      .get();
+    let dataClient = snapshotClient.data();
+    changeDataClient(dataClient);
   }, []);
 
-  const loadDataProvider = (provider) => {
-
-    changeDataProvider(() => ({
-      business: provider.business,
-      type_document: provider.type_document,
-      nid: provider.nid,
-      country: provider.country,
-      city: provider.city,
-      address: provider.address,
-      email: provider.email,
-      phone: provider.phone,
-      contact_name: provider.contact_name,
-      contact_email: provider.contact_email,
-      contact_phone: provider.contact_phone,
-      keywords: provider.keywords,
-      type_provider: provider.type_provider,
-    }));
-  };
+  useEffect(() => {
+    fetchMyAPI();
+  }, [fetchMyAPI]);
 
   const changeData = (e) => {
     const { name, value } = e.target;
 
-    if (
-      (name === "type_provider" && value === "business") ||
-      value === "people"
-    ) {
-      console.log("reset");
-      changeDataProvider((prev) => ({
-        business: "",
-        type_document: "",
-        id: "",
-        country: "",
-        city: "",
-        address: "",
-        email: "",
-        phone: "",
-        contact_name: "",
-        contact_email: "",
-        contact_phone: "",
-        [name]: value,
-      }));
-    } else {
-      changeDataProvider((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    }
+    changeDataClient((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const handleClose = () => {
@@ -128,41 +96,39 @@ const EditProvider = (props) => {
     setOpen(true);
   };
 
-  const saveDataFirebase = (e) => {
+  const saveDataFirebase = async (e) => {
     e.preventDefault();
-
-    const { id } = props.match.params;
 
     let textSearch = "";
 
-    if (provider.type_provider == "business") {
+    if (client.type_client == "business") {
       textSearch =
-        provider.business +
+        client.business +
         " " +
-        provider.type_document +
+        client.type_document +
         " " +
-        provider.nid +
+        client.nid +
         " " +
-        provider.type_provider;
+        client.type_client;
     } else {
       textSearch =
-        provider.contact_name +
+        client.contact_name +
         " " +
-        provider.type_document +
+        client.type_document +
         " " +
-        provider.nid +
+        client.nid +
         " " +
-        provider.type_provider;
+        client.type_client;
     }
 
-    provider.keywords = crearKeyword(textSearch);
+    client.keywords = crearKeyword(textSearch);
 
     props.firebase.db
-      .collection("Providers")
+      .collection("Clients")
       .doc(id)
-      .set(provider, { merge: true })
+      .set(client, { merge: true })
       .then((success) => {
-        props.history.goBack();
+        props.history.push("/");
       })
       .catch((error) => {
         console.log("error: ", error);
@@ -179,13 +145,18 @@ const EditProvider = (props) => {
                 <HomeIcon />
                 Principal
               </Link>
-              <Typography color="textPrimary">Proveedores</Typography>
-              <Typography color="textPrimary">Editar</Typography>
+              <Typography color="textPrimary">Clientes</Typography>
+              <Typography color="textPrimary">Agregar</Typography>
+              <Typography color="textPrimary">
+                {type === "people" ? "Persona Natural" : "Empresa"}
+              </Typography>
             </Breadcrumbs>
           </Grid>
         </Grid>
-        {provider.type_provider === "business" ? (
-          <Grid container spacing={2} style={style.form}>
+      </Paper>
+      <Paper style={style.form}>
+        {client.type_client === "business" ? (
+          <Grid container spacing={2} style={style.gridForm}>
             <Grid item xs={12} md={12}>
               <Typography color="textPrimary">Datos Empresa</Typography>
             </Grid>
@@ -195,7 +166,7 @@ const EditProvider = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Nombre"
-                value={provider.business}
+                value={client.business}
                 onChange={changeData}
               />
             </Grid>
@@ -211,7 +182,7 @@ const EditProvider = (props) => {
                   open={open}
                   onClose={handleClose}
                   onOpen={handleOpen}
-                  value={provider.type_document}
+                  value={client.type_document}
                   onChange={changeData}
                   fullWidth
                 >
@@ -224,8 +195,8 @@ const EditProvider = (props) => {
                 name="nid"
                 variant="outlined"
                 fullWidth
-                label={provider.type_document || "Tipo Identificación"}
-                value={provider.nid}
+                label={client.type_document || "Tipo Identificación"}
+                value={client.nid}
                 onChange={changeData}
               />
             </Grid>
@@ -235,7 +206,7 @@ const EditProvider = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Pais"
-                value={provider.country}
+                value={client.country}
                 onChange={changeData}
               />
             </Grid>
@@ -245,7 +216,7 @@ const EditProvider = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Ciudad"
-                value={provider.city}
+                value={client.city}
                 onChange={changeData}
               />
             </Grid>
@@ -255,7 +226,7 @@ const EditProvider = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Dirección"
-                value={provider.address}
+                value={client.address}
                 onChange={changeData}
               />
             </Grid>
@@ -265,7 +236,7 @@ const EditProvider = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Correo"
-                value={provider.email}
+                value={client.email}
                 onChange={changeData}
               />
             </Grid>
@@ -275,7 +246,7 @@ const EditProvider = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Numero Telefono"
-                value={provider.phone}
+                value={client.phone}
                 onChange={changeData}
               />
             </Grid>
@@ -290,7 +261,7 @@ const EditProvider = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Nombre"
-                value={provider.contact_name}
+                value={client.contact_name}
                 onChange={changeData}
               />
             </Grid>
@@ -300,7 +271,7 @@ const EditProvider = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Correo"
-                value={provider.contact_email}
+                value={client.contact_email}
                 onChange={changeData}
               />
             </Grid>
@@ -310,13 +281,13 @@ const EditProvider = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Numero Telefono"
-                value={provider.contact_phone}
+                value={client.contact_phone}
                 onChange={changeData}
               />
             </Grid>
           </Grid>
         ) : (
-          <Grid container spacing={2} style={style.form}>
+          <Grid container spacing={2} style={style.gridForm}>
             <Grid item xs={12} md={12}>
               <Typography color="textPrimary">Datos Persona Natural</Typography>
             </Grid>
@@ -326,7 +297,7 @@ const EditProvider = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Nombre"
-                value={provider.contact_name}
+                value={client.contact_name}
                 onChange={changeData}
               />
             </Grid>
@@ -342,7 +313,7 @@ const EditProvider = (props) => {
                   open={open}
                   onClose={handleClose}
                   onOpen={handleOpen}
-                  value={provider.type_document}
+                  value={client.type_document}
                   onChange={changeData}
                   fullWidth
                 >
@@ -359,11 +330,11 @@ const EditProvider = (props) => {
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField
-                name="id"
+                name="nid"
                 variant="outlined"
                 fullWidth
-                label={provider.type_document || "Tipo Identificación"}
-                value={provider.nid}
+                label={client.type_document || "Tipo Identificación"}
+                value={client.nid}
                 onChange={changeData}
               />
             </Grid>
@@ -373,7 +344,7 @@ const EditProvider = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Pais"
-                value={provider.country}
+                value={client.country}
                 onChange={changeData}
               />
             </Grid>
@@ -383,7 +354,7 @@ const EditProvider = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Ciudad"
-                value={provider.city}
+                value={client.city}
                 onChange={changeData}
               />
             </Grid>
@@ -393,7 +364,7 @@ const EditProvider = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Dirección"
-                value={provider.address}
+                value={client.address}
                 onChange={changeData}
               />
             </Grid>
@@ -403,7 +374,7 @@ const EditProvider = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Correo"
-                value={provider.contact_email}
+                value={client.contact_email}
                 onChange={changeData}
               />
             </Grid>
@@ -413,12 +384,14 @@ const EditProvider = (props) => {
                 variant="outlined"
                 fullWidth
                 label="Numero Telefono"
-                value={provider.contact_phone}
+                value={client.contact_phone}
                 onChange={changeData}
               />
             </Grid>
           </Grid>
         )}
+      </Paper>
+      <Paper style={style.form}>
         <Grid container justify="center">
           <Grid item xs={12} sm={6}>
             <Button
@@ -430,7 +403,7 @@ const EditProvider = (props) => {
               style={style.submit}
               onClick={saveDataFirebase}
             >
-              GUARDAR CAMBIOS
+              GUARDAR
             </Button>
           </Grid>
         </Grid>
@@ -439,4 +412,4 @@ const EditProvider = (props) => {
   );
 };
 
-export default consumerFirebase(EditProvider);
+export default consumerFirebase(EditClient);

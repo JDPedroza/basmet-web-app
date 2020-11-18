@@ -17,12 +17,14 @@ div.dContenedor {
 }
 
 div.modules {
-  margin: 3.25% 0 0 3.25%;
+  margin: auto;
+  margin-top: 30px;
   position: relative;
   display: inline-block;
   text-align: center;
   align-content: center;
-  width: 29%;
+  width: 90%;
+  max-width: 300px;
   height: auto;
   perspective: 300px;
 }
@@ -77,6 +79,12 @@ div#dUsuarios {
   transition: 0.7s ease;
   transform-style: preserve-3d;
   -webkit-transform-style: preserve-3d;
+}
+div#dReportes {
+  transition: 0.7s ease;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  margin-bottom: 30px;
 }
 
 .texto-encima {

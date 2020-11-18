@@ -63,13 +63,14 @@ const style = {
   },
 };
 
-const AddStandarizations = (props) => {
+const AddProcesses = (props) => {
   //Generals
-  const { type } = props.match.params;
+  const { id } = props.match.params;
   const [{ sesion }, dispatch] = useStateValue();
 
   //dataName
   const [name, setName] = useState("");
+  const [extraData, setExtraData] = useState("");
 
   //dataRawMaterials
   const [elementsRawMaterials, setElementsRawMaterial] = useState([
@@ -109,6 +110,53 @@ const AddStandarizations = (props) => {
 
   //getData
   const fetchMyAPI = useCallback(async () => {
+    //getDataProcess
+    let snapshotProcess = await props.firebase.db
+      .collection("Standardizations")
+      .doc("3qPO90cfep2Xhg89rvnu")
+      .get();
+
+    let dataProcess = snapshotProcess.data();
+
+    let tempSelectedTitlesRawMaterials = [];
+    let tempItemsRawMaterials = [];
+    let tempSelectedTitlesSupplies = [];
+    let tempItemsSupplies = [];
+    for (let i = 0; i < dataProcess.elements.length; i++) {
+      if (dataProcess.elements[i].nid === id) {
+        setName(dataProcess.elements[i].name);
+        setExtraData(dataProcess.elements[i].nid);
+        for (let j = 0; j < dataProcess.elements[i].raw_materials.length; j++) {
+          tempSelectedTitlesRawMaterials.push({
+            title: dataProcess.elements[i].raw_materials[j].description,
+          });
+          tempItemsRawMaterials.push({
+            nid: dataProcess.elements[i].raw_materials[j].nid,
+            quantity: dataProcess.elements[i].raw_materials[j].quantity,
+            description: dataProcess.elements[i].raw_materials[j].description,
+          });
+        }
+        console.log(tempSelectedTitlesRawMaterials);
+        for (let k = 0; k < dataProcess.elements[i].supplies.length; k++) {
+          tempSelectedTitlesSupplies.push({
+            title: dataProcess.elements[i].supplies[k].description,
+          });
+          tempItemsSupplies.push({
+            nid: dataProcess.elements[i].supplies[k].nid,
+            quantity: dataProcess.elements[i].supplies[k].quantity,
+            description: dataProcess.elements[i].supplies[k].description,
+          });
+        }
+      }
+    }
+
+    setSelectedTitlesRawMaterials(tempSelectedTitlesRawMaterials);
+    setSelectedTitlesSupplies(tempSelectedTitlesSupplies);
+    setDataItems({
+      raw_materials: tempItemsRawMaterials,
+      supplies: tempItemsSupplies,
+    });
+
     //getDataRawMaterials
     let itemsRawMaterials = [];
     let getDataRawMaterials = await props.firebase.db
@@ -249,10 +297,8 @@ const AddStandarizations = (props) => {
   const saveDataFirebase = async (e) => {
     e.preventDefault();
 
-    let nid = uuidv4();
-
     let jsonFormatElementStandardization = {
-      nid,
+      nid: extraData,
       name,
       raw_materials: items.raw_materials,
       supplies: items.supplies,
@@ -265,22 +311,20 @@ const AddStandarizations = (props) => {
 
     let dataStandardizations = dataStandardizationsBD.data();
 
-    let arrayElements = dataStandardizations.elements;
-    
-    arrayElements.push(jsonFormatElementStandardization);
-
-    let jsonFormatStandardization = {
-      elements: arrayElements,
+    for(let i=0; i< dataStandardizations.elements.length; i++){
+      if(dataStandardizations.elements[i].nid===id){
+        dataStandardizations.elements[i]=jsonFormatElementStandardization;
+      }
     }
 
     props.firebase.db
       .collection("Standardizations")
       .doc("3qPO90cfep2Xhg89rvnu")
-      .set(jsonFormatStandardization, { merge: true })
+      .set(dataStandardizations, { merge: true })
       .then((success) => {
         openMensajePantalla(dispatch, {
           open: true,
-          mensaje: "SE GUARDO EL PROCESO",
+          mensaje: "SE ACTUALIZO EL PROCESO",
         });
         props.history.replace(`/procesos/mostrar/search`);
       });
@@ -292,14 +336,13 @@ const AddStandarizations = (props) => {
         <Grid container spacing={3}>
           <Grid item xs={12} md={12}>
             <Breadcrumbs aria-label="breadcrumbs">
-              <Link color="inherit" style={style.link} href="/home">
+              <Link color="inherit" style={style.link} href="/">
                 <HomeIcon />
                 Principal
               </Link>
               <Typography color="textPrimary">Inventario</Typography>
-              <Typography color="textPrimary">Agregar</Typography>
-              <Typography color="textPrimary">Productos en Proceso</Typography>
-              <Typography color="textPrimary">Estandarizar Producto</Typography>
+              <Typography color="textPrimary">Editar</Typography>
+              <Typography color="textPrimary">Proceso</Typography>
             </Breadcrumbs>
           </Grid>
         </Grid>
@@ -539,4 +582,4 @@ const AddStandarizations = (props) => {
   );
 };
 
-export default consumerFirebase(AddStandarizations);
+export default consumerFirebase(AddProcesses);

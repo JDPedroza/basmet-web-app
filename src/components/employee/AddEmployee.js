@@ -52,22 +52,27 @@ const AddEmployee = (props) => {
     type_document: "",
     nid: "",
     name: "",
+    lastname: "",
     country: "",
     city: "",
     address: "",
     phone: "",
+    email: "",
     points_operation: "",
     inventories_employee: "",
+    processes_employee: [],
   });
 
   let [validationFormEmployee, setDataValidationFormEmployee] = useState({
     type_document: false,
     nid: false,
     name: false,
+    lastname: false,
     country: false,
     city: false,
     address: false,
     phone: false,
+    email: false,
   });
 
   const changeData = (e) => {
@@ -99,6 +104,12 @@ const AddEmployee = (props) => {
       validationFormEmployee.name = true;
     } else {
       validationFormEmployee.name = false;
+    }
+    if (employee.lastname.length === 0) {
+      validation = false;
+      validationFormEmployee.lastname = true;
+    } else {
+      validationFormEmployee.lastname = false;
     }
     if (employee.type_document.length === 0) {
       validation = false;
@@ -136,7 +147,12 @@ const AddEmployee = (props) => {
     } else {
       validationFormEmployee.phone = false;
     }
-
+    if (employee.email.length === 0) {
+      validation = false;
+      validationFormEmployee.email = true;
+    } else {
+      validationFormEmployee.email = false;
+    }
 
     if (!validation) {
       openMensajePantalla(dispatch, {
@@ -145,49 +161,42 @@ const AddEmployee = (props) => {
           "Errores en el formulario. Por favor, diligencie todos los campos solicitados",
       });
     } else {
-      openMensajePantalla(dispatch, {
-        open: true,
-        mensaje:
-          "Validacion completa",
-      });
-      /*
-    let jsonFormatInventoriesEmployee = {
-      tools_equipament: [],
-      implements: [],
-    };
+      let jsonFormatInventoriesEmployee = {
+        tools_equipment: [],
+        implements: [],
+      };
 
-    let idInventoriesEmployee;
+      let idInventoriesEmployee;
 
-    await props.firebase.db
-      .collection("InventoriesEmployess")
-      .add(jsonFormatInventoriesEmployee)
-      .then((success) => {
-        idInventoriesEmployee = success.id;
-      })
-      .catch((error) => {
-        console.log("error: ", error);
-      });
-
-    employee.inventories_employee = idInventoriesEmployee;
-
-    let id = "";
-
-    await props.firebase.db
-      .collection("Employees")
-      .add(employee)
-      .then((success) => {
-        openMensajePantalla(dispatch, {
-          open: true,
-          mensaje: "Se guardaron los datos del empleado",
+      await props.firebase.db
+        .collection("InventoriesEmployee")
+        .add(jsonFormatInventoriesEmployee)
+        .then((success) => {
+          idInventoriesEmployee = success.id;
+        })
+        .catch((error) => {
+          console.log("error: ", error);
         });
-        id = success.id;
-      })
-      .catch((error) => {
-        console.log("error: ", error);
-      });
 
-    props.history.replace(`/empleados/mostrar/modify/assignment/${id}`);
-    */
+      employee.inventories_employee = idInventoriesEmployee;
+
+      let id = "";
+
+      await props.firebase.db
+        .collection("Employees")
+        .add(employee)
+        .then((success) => {
+          openMensajePantalla(dispatch, {
+            open: true,
+            mensaje: "Se guardaron los datos del empleado",
+          });
+          id = success.id;
+        })
+        .catch((error) => {
+          console.log("error: ", error);
+        });
+
+      props.history.replace(`/empleados/add/modify/assignment/${id}`);
     }
   };
 
@@ -212,7 +221,7 @@ const AddEmployee = (props) => {
           <Grid item xs={12} md={12}>
             <Typography color="textPrimary">Datos Empleado</Typography>
           </Grid>
-          <Grid item xs={12} md={12}>
+          <Grid item xs={12} md={6}>
             <TextField
               name="name"
               variant="outlined"
@@ -223,7 +232,23 @@ const AddEmployee = (props) => {
               error={validationFormEmployee.name}
               helperText={
                 validationFormEmployee.name
-                  ? "Por favor ingrese un nombre: ej. Johan Pedroza"
+                  ? "Por favor ingrese un nombre: ej. Johan"
+                  : ""
+              }
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              name="lastname"
+              variant="outlined"
+              fullWidth
+              label="Apellidos"
+              value={employee.lastname}
+              onChange={changeData}
+              error={validationFormEmployee.lastname}
+              helperText={
+                validationFormEmployee.lastname
+                  ? "Por favor ingrese un nombre: ej. Pedroza"
                   : ""
               }
             />
@@ -310,7 +335,7 @@ const AddEmployee = (props) => {
               }
             />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={12}>
             <TextField
               name="address"
               variant="outlined"
@@ -339,6 +364,23 @@ const AddEmployee = (props) => {
               helperText={
                 validationFormEmployee.phone
                   ? "Por favor ingrese un telefóno: ej. 3137180035"
+                  : ""
+              }
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              name="email"
+              variant="outlined"
+              fullWidth
+              type="email"
+              label="Correo Electronico"
+              value={employee.email}
+              onChange={changeData}
+              error={validationFormEmployee.email}
+              helperText={
+                validationFormEmployee.email
+                  ? "Por favor ingrese un correo: ej. soporte@gmail.com"
                   : ""
               }
             />

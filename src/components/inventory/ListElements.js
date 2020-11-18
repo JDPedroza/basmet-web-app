@@ -256,7 +256,6 @@ const ListElements = (props) => {
 
     let results = await Promise.all(
       dataElements.elements.map(async (element) => {
-        console.log(element);
 
         let jsonFormatElements = {
           nid: element.nid,

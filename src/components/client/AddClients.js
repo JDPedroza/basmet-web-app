@@ -48,6 +48,8 @@ const style = {
 };
 
 const AddClient = (props) => {
+  
+  const { type } = props.match.params;
   const [open, setOpen] = useState(false);
   const [{ sesion }, dispatch] = useStateValue();
   let [client, changeDataClient] = useState({
@@ -57,6 +59,7 @@ const AddClient = (props) => {
     name: "",
     country: "",
     city: "",
+    business: "",
     address: "",
     email: "",
     phone: "",
@@ -81,8 +84,6 @@ const AddClient = (props) => {
 
 
   useEffect(() => {
-    const { type } = props.match.params;
-
     changeDataClient({
       ...client,
       type_client: type,
@@ -136,11 +137,11 @@ const AddClient = (props) => {
     //  
     console.log(client)
     // e
-    if (client.name.length === 0) {
+    if (client.business.length === 0) {
         validation = false;
-        validationFormClient.name = true;
+        validationFormClient.business = true;
     } else {
-        validationFormClient.name = false;
+        validationFormClient.business = false;
     }
     if (client.type_document.length === 0) {
         validation = false;
@@ -204,7 +205,7 @@ const AddClient = (props) => {
       .collection("Clients")
       .add(client)
       .then((success) => {
-        props.history.push("/");
+        props.history.push(`/clientes/mostrar/${type}/search`);
       })
       .catch((error) => {
         console.log("error: ", error);
@@ -221,7 +222,7 @@ const AddClient = (props) => {
         <Grid container spacing={3}>
           <Grid item xs={12} md={8}>
             <Breadcrumbs aria-label="breadcrumbs">
-              <Link color="inherit" style={style.link} href="/home">
+              <Link color="inherit" style={style.link} href="/">
                 <HomeIcon />
                 Principal
               </Link>
@@ -239,7 +240,7 @@ const AddClient = (props) => {
             </Grid>
             <Grid item xs={12} md={12}>
               <TextField
-                name="name"
+                name="business"
                 variant="outlined"
                 fullWidth
                 label="Nombre"

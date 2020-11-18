@@ -49,7 +49,7 @@ const style = {
   };
 
 function Row(props) {
-  const { row, query } = props;
+  const { row, query, type } = props;
   const [open, setOpen] = React.useState(false);
 
   return (
@@ -74,7 +74,7 @@ function Row(props) {
         <TableCell>{row.email}</TableCell>
         {query === "modify" ? (
           <TableCell allgn="center">
-            <IconButton aria-label="edit" href={`/proveedor/editar/${row.id}`}>
+            <IconButton aria-label="edit" href={`/clientes/editar/${type}/${row.id}`}>
               <EditIcon fontSize="small" />
             </IconButton>
           </TableCell>
@@ -100,7 +100,7 @@ function Row(props) {
                   {row.points_operation.map((point_operation) => (
                     <TableRow key={point_operation.date}>
                       <TableCell component="th" scope="row">
-                        {`${point_operation.address} - ${point_operation.city}, ${point_operation.country}`}
+                        {`${point_operation.address}, ${point_operation.city} - ${point_operation.country}`}
                       </TableCell>
                       <TableCell component="th" scope="row">
                         {point_operation.id}
@@ -173,6 +173,7 @@ const ListClients = (props) => {
     let results = await Promise.all(
       snapshot.docs.map(async (doc) => {
         let data = doc.data();
+        console.log(data);
         let id = doc.id;
         let arrayPointsOperation = [];
         let jsonFormatPointsOperation = {
@@ -184,7 +185,7 @@ const ListClients = (props) => {
         };
 
         let snapshotPointsOperationClient = {};
-        if (data.points_operation !== "") {
+        if (data.points_operation.length !== 0) {
           for (let i = 0; i < data.points_operation.length; i++) {
             snapshotPointsOperationClient = await props.firebase.db
               .collection("PointsOperation")
@@ -193,12 +194,14 @@ const ListClients = (props) => {
 
             let dataPointsOperationClient = snapshotPointsOperationClient.data();
 
+            console.log(dataPointsOperationClient);
+
             jsonFormatPointsOperation = {
-              id: dataPointsOperationClient.id,
-              address: dataPointsOperationClient.nid,
-              city: dataPointsOperationClient.date,
-              country: dataPointsOperationClient.items.length,
-              phone: dataPointsOperationClient.sub_total,
+              id: snapshotPointsOperationClient.id,
+              address: dataPointsOperationClient.address,
+              city: dataPointsOperationClient.city,
+              country: dataPointsOperationClient.country,
+              phone: dataPointsOperationClient.phone,
             };
 
             arrayPointsOperation.push(jsonFormatPointsOperation);
@@ -237,7 +240,7 @@ const ListClients = (props) => {
       <Paper style={style.paper}>
         <Grid item xs={12} sm={12}>
           <Breadcrumbs aria-label="breadcrumbs">
-            <Link color="inherit" style={style.link} href="/home">
+            <Link color="inherit" style={style.link} href="/">
               <HomeIcon />
               Principal
             </Link>

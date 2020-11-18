@@ -62,7 +62,7 @@ class AppNawBar extends Component {
     return sesion ? (
       sesion.autenticado ? (
         <div>
-          <AppBar position="sticky">
+          <AppBar position="sticky" style={{ background: '#2E3B55', height:'60px'}}>
             <BarSession />
           </AppBar>
         </div>

@@ -5164,3 +5164,16 @@
 [1006/112243.269:ERROR:crash_report_database_win.cc(469)] failed to stat report
 [1006/112243.269:ERROR:crash_report_database_win.cc(469)] failed to stat report
 [1006/112243.269:ERROR:crash_report_database_win.cc(469)] failed to stat report
+[1022/173019.076:ERROR:directory_reader_win.cc(43)] FindFirstFile: El sistema no puede encontrar la ruta especificada. (0x3)
+[1107/120517.109:ERROR:crash_report_database_win.cc(498)] failed to stat report
+[1107/120517.238:ERROR:crash_report_database_win.cc(498)] failed to stat report
+[1107/164934.604:ERROR:directory_reader_win.cc(43)] FindFirstFile: El sistema no puede encontrar la ruta especificada. (0x3)
+[1110/103944.051:ERROR:directory_reader_win.cc(43)] FindFirstFile: El sistema no puede encontrar la ruta especificada. (0x3)
+[1110/194035.303:ERROR:process_reader_win.cc(123)] NtOpenThread: {Acceso denegado} Un proceso ha solicitado acceso a un objeto, pero no se le han concedido esos derechos de acceso. (0xc0000022)
+[1110/194035.312:ERROR:process_reader_win.cc(123)] NtOpenThread: {Acceso denegado} Un proceso ha solicitado acceso a un objeto, pero no se le han concedido esos derechos de acceso. (0xc0000022)
+[1110/194035.265:ERROR:process_reader_win.cc(123)] NtOpenThread: {Acceso denegado} Un proceso ha solicitado acceso a un objeto, pero no se le han concedido esos derechos de acceso. (0xc0000022)
+[1110/194035.492:ERROR:exception_snapshot_win.cc(99)] thread ID 3268 not found in process
+[1110/194035.492:ERROR:exception_snapshot_win.cc(99)] thread ID 11380 not found in process
+[1110/194035.492:ERROR:exception_snapshot_win.cc(99)] thread ID 7500 not found in process
+[1114/102004.792:ERROR:directory_reader_win.cc(43)] FindFirstFile: El sistema no puede encontrar la ruta especificada. (0x3)
+[1118/105859.892:ERROR:directory_reader_win.cc(43)] FindFirstFile: El sistema no puede encontrar la ruta especificada. (0x3)

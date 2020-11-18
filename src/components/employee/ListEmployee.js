@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 //diseño
 import {
@@ -26,8 +26,8 @@ import KeyboardArrowDownIcon from "@material-ui/icons/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@material-ui/icons/KeyboardArrowUp";
 
 //utils
-import { consumerFirebase } from "../../server";
 import PropTypes from "prop-types";
+import { consumerFirebase } from "../../server";
 
 const style = {
   cardGrid: {
@@ -49,7 +49,7 @@ const style = {
 };
 
 function Row(props) {
-  const { row, query, type } = props;
+  const { row, query, type} = props;
   const [open, setOpen] = React.useState(false);
 
   return (
@@ -71,10 +71,9 @@ function Row(props) {
         <TableCell>{row.name}</TableCell>
         <TableCell>{row.address}</TableCell>
         <TableCell>{row.phone}</TableCell>
-        <TableCell>{row.email}</TableCell>
         {query === "modify" ? (
           <TableCell allgn="center">
-            <IconButton aria-label="edit" href={`/proveedor/editar/${row.id}`}>
+            <IconButton aria-label="edit" href={type==="data"?`/empleado/edit/${row.id}`:`/empleados/edit/modify/assignment/${row.id}`}>
               <EditIcon fontSize="small" />
             </IconButton>
           </TableCell>
@@ -82,35 +81,29 @@ function Row(props) {
           ""
         )}
       </TableRow>
-      <TableRow key="titles">
+      <TableRow key="titles_point_operation">
         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={12}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <Box margin={1}>
               <Typography variant="h6" gutterBottom component="div">
-                Ultima Compra
+                Punto de Operación
               </Typography>
               <Table size="small" aria-label="purchases">
                 <TableHead>
                   <TableRow>
-                    <TableCell>Numero Factura</TableCell>
-                    <TableCell>Fecha</TableCell>
-                    <TableCell>Numero Elementos</TableCell>
-                    <TableCell align="right">Sub Total</TableCell>
-                    <TableCell align="right">Total</TableCell>
+                    <TableCell>Dirección</TableCell>
+                    <TableCell>Telefóno</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {row.last_bill.map((last_bill) => (
-                    <TableRow key={last_bill.date}>
+                  {row.point_operation.map((point_operation) => (
+                    <TableRow key={point_operation.date}>
                       <TableCell component="th" scope="row">
-                        {last_bill.nid}
+                        {`${point_operation.address}, ${point_operation.city} - ${point_operation.country}`}
                       </TableCell>
                       <TableCell component="th" scope="row">
-                        {last_bill.date}
+                        {point_operation.phone}
                       </TableCell>
-                      <TableCell>{last_bill.items}</TableCell>
-                      <TableCell align="right">{last_bill.sub_total}</TableCell>
-                      <TableCell align="right">{last_bill.total}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -119,6 +112,7 @@ function Row(props) {
           </Collapse>
         </TableCell>
       </TableRow>
+      
     </React.Fragment>
   );
 }
@@ -131,99 +125,122 @@ Row.propTypes = {
     address: PropTypes.string.isRequired,
     city: PropTypes.string.isRequired,
     phone: PropTypes.string.isRequired,
-    email: PropTypes.string.isRequired,
-    last_bill: PropTypes.arrayOf(
+    point_operation: PropTypes.arrayOf(
       PropTypes.shape({
-        date: PropTypes.string.isRequired,
-        items: PropTypes.number.isRequired,
-        sub_total: PropTypes.number.isRequired,
-        total: PropTypes.number.isRequired,
+        address: PropTypes.string.isRequired,
+        city: PropTypes.number.isRequired,
+        country: PropTypes.number.isRequired,
+        phone: PropTypes.number.isRequired,
+      })
+    ).isRequired,
+    inventories_employee: PropTypes.arrayOf(
+      PropTypes.shape({
+        implements: PropTypes.array.isRequired,
+        tools_equipment: PropTypes.array.isRequired,
       })
     ).isRequired,
   }).isRequired,
 };
 
-const ListProviders = (props) => {
-  const { type, query } = props.match.params;
-
-  const [providers, setProviders] = useState([]);
+const ListEmployee = (props) => {
+  const { query, type } = props.match.params;
+  const [employees, setEmployees] = useState([]);
 
   const fetchMyAPI = useCallback(async () => {
-    let objectQuery;
+    let snapshotEmployee = await props.firebase.db
+      .collection("Employees")
+      .orderBy("nid")
+      .get();
 
-    if (type === "all") {
-      objectQuery = props.firebase.db.collection("Providers").orderBy("nid");
-    } else {
-      objectQuery = props.firebase.db
-        .collection("Providers")
-        .where("type_provider", "==", type);
-    }
-
-    let jsonFormatProvider = {
+    let jsonFormatEmployee = {
       id: "",
       type_document: "",
-      nid: 0,
+      nid: "",
       name: "",
       address: "",
       city: "",
-      phone: 0,
-      email: "",
-      last_bill: [],
+      phone: "",
+      point_operation: [],
+      inventories_employee: [],
     };
 
-    const snapshot = await objectQuery.get();
-
     let results = await Promise.all(
-      snapshot.docs.map(async (doc) => {
+      snapshotEmployee.docs.map(async (doc) => {
         let data = doc.data();
         let id = doc.id;
-        let jsonFormatLastBill = [
-          { nid:"No disponible", date: "01-01-2020", items: "0", sub_total: 0, total: 0 },
+        let jsonFormatInventoriesEmployee = [
+          {
+            implements: [],
+            tools_equipment: [],
+          },
         ];
-
-        let snapshotLastBill = {};
-        if (data.last_bill !== "") {
-          snapshotLastBill = await props.firebase.db
-            .collection("BillBuy")
-            .doc(data.last_bill)
+        let snapshotInventoriesEmployee = {};
+        if (data.inventories_employee !== "") {
+          snapshotInventoriesEmployee = await props.firebase.db
+            .collection("InventoriesEmployee")
+            .doc(data.inventories_employee)
             .get();
 
-          let dataLastBill = snapshotLastBill.data();
+          let dataInventoriesEmployee = snapshotInventoriesEmployee.data();
 
-          jsonFormatLastBill = [
+          jsonFormatInventoriesEmployee = [
             {
-              nid: dataLastBill.nid,
-              date: dataLastBill.date,
-              items: dataLastBill.items.length,
-              sub_total: dataLastBill.sub_total,
-              total: dataLastBill.total,
+              implements: dataInventoriesEmployee.implements,
+              tools_equipment: dataInventoriesEmployee.tools_equipment,
             },
           ];
         }
 
-        jsonFormatProvider = {
-          ...jsonFormatProvider,
+        let jsonFormatPointOperation = [
+          {
+            address: "",
+            city: "",
+            country: "",
+            phone: "",
+          },
+        ];
+        let snapshotPointOperation = {};
+        if (data.points_operation !== "") {
+          snapshotPointOperation = await props.firebase.db
+            .collection("PointsOperation")
+            .doc(data.points_operation)
+            .get();
+
+          let dataPointOperation = snapshotPointOperation.data();
+
+          jsonFormatPointOperation = [
+            {
+              address: dataPointOperation.address,
+              city: dataPointOperation.city,
+              country: dataPointOperation.country,
+              phone: dataPointOperation.phone,
+            },
+          ];
+        }
+
+        jsonFormatEmployee = {
+          ...jsonFormatEmployee,
           id,
           type_document: data.type_document,
           nid: data.nid,
-          name: data.business || data.contact_name,
+          name: `${data.name} ${data.lastname}`,
           address: data.address,
           city: data.city,
-          phone: data.phone || data.contact_phone,
-          email: data.email || data.contact_email,
-          nid_last_bill: data.last_bill,
-          last_bill: jsonFormatLastBill,
+          phone: data.phone,
+          point_operation: jsonFormatPointOperation,
+          inventories_employee: jsonFormatInventoriesEmployee,
         };
 
-        return jsonFormatProvider;
+        return jsonFormatEmployee;
       })
     );
 
-    setProviders(results);
-  }, [])
+    setEmployees(results);
+    console.log(results)
+  }, []);
 
   useEffect(() => {
-    fetchMyAPI()
+    fetchMyAPI();
   }, [fetchMyAPI]);
 
   return (
@@ -235,14 +252,8 @@ const ListProviders = (props) => {
               <HomeIcon />
               Principal
             </Link>
-            <Typography color="textPrimary">Proveedores</Typography>
-            <Typography color="textPrimary">
-              {type === "all"
-                ? "Todos"
-                : type === "business"
-                ? "Empresa"
-                : "Persona Natural"}
-            </Typography>
+            <Typography color="textPrimary">Empleados</Typography>
+            <Typography color="textPrimary">Mostrar</Typography>
           </Breadcrumbs>
         </Grid>
       </Paper>
@@ -257,17 +268,12 @@ const ListProviders = (props) => {
                 <TableCell>Nombre</TableCell>
                 <TableCell>Dirección</TableCell>
                 <TableCell>Telefono</TableCell>
-                <TableCell>Correo</TableCell>
-                {query === "modify" ? (
-                  <TableCell/>
-                ) : (
-                  ""
-                )}
+                {query === "modify" ? <TableCell /> : ""}
               </TableRow>
             </TableHead>
             <TableBody>
-              {providers.map((row) => (
-                <Row key={row.name} row={row} type={type} query={query} />
+              {employees.map((row) => (
+                <Row key={row.name} row={row} query={query} type={type}/>
               ))}
             </TableBody>
           </Table>
@@ -277,4 +283,4 @@ const ListProviders = (props) => {
   );
 };
 
-export default consumerFirebase(ListProviders);
+export default consumerFirebase(ListEmployee);

@@ -165,10 +165,14 @@ const AddElement = (props) => {
         doc = "RawMaterials";
       } else if (table === "herramientas_y_equipos") {
         doc = "ToolsEquipment";
-      } else if (table === "supplies") {
-        doc = "Supplies";
-      } else {
-        doc = "Implements";
+      } else if (table === "insumos"){
+        doc = "Supplies"
+      } else if (table === "implementos"){
+        doc = "Implements"
+      } else if (table === "productos_en_proceso"){
+        doc = "ItemsProcess"
+      } else if (table === "productos_en_embalaje"){
+        doc = "ItemsPackaging"
       }
 
       let data = await props.firebase.db
@@ -177,6 +181,11 @@ const AddElement = (props) => {
         .get();
 
       dataInventory = data.data();
+
+      itemsInventory.push({
+        title: "Elementos",
+        nid: "aa",
+      });
 
       for (let i = 0; i < dataInventory.elements.length; i++) {
         let jsonFormatElements = {
@@ -293,10 +302,14 @@ const AddElement = (props) => {
       doc = "RawMaterials";
     } else if (table === "herramientas_y_equipos") {
       doc = "ToolsEquipment";
-    } else if (table === "supplies") {
-      doc = "Supplies";
-    } else {
-      doc = "Implements";
+    } else if (table === "insumos"){
+      doc = "Supplies"
+    } else if (table === "implementos"){
+      doc = "Implements"
+    } else if (table === "productos_en_proceso"){
+      doc = "ItemsProcess"
+    } else if (table === "productos_en_embalaje"){
+      doc = "ItemsPackaging"
     }
 
     itemsAvaibles.push({ title: "Otros elementos del inventario", nid: 1 });
@@ -510,7 +523,7 @@ const AddElement = (props) => {
 
       jsonFormatReport = {
         ...jsonFormatReport,
-        data: { items: items.data, nid_bill_buy: idBill },
+        data: { items: items.data },
       };
     } else {
       jsonFormatReport = {
@@ -541,10 +554,14 @@ const AddElement = (props) => {
       doc = "RawMaterials";
     } else if (table === "herramientas_y_equipos") {
       doc = "ToolsEquipment";
-    } else if (table === "supplies") {
-      doc = "Supplies";
-    } else {
-      doc = "Implements";
+    } else if (table === "insumos"){
+      doc = "Supplies"
+    } else if (table === "implementos"){
+      doc = "Implements"
+    } else if (table === "productos_en_proceso"){
+      doc = "ItemsProcess"
+    } else if (table === "productos_en_embalaje"){
+      doc = "ItemsPackaging"
     }
 
     let data = await props.firebase.db.collection("Inventories").doc(doc).get();
@@ -552,7 +569,6 @@ const AddElement = (props) => {
     inventoryTemp = data.data();
 
     let idProvider = null;
-    console.log(provider);
     if (type === "factura") {
       idProvider = provider.id;
     }
@@ -574,17 +590,12 @@ const AddElement = (props) => {
             let title = items.data[j].description;
             let distributions = inventoryTemp.elements[i].distributions;
             let last_modify = idReport;
-            console.log("array provider last:", providers);
             const provider = providers.includes(
               (element) => element === idProvider
             );
-            console.log("busqueda de provider", provider);
             if (!provider && type === "factura") {
-              console.log("asignado");
               providers.push(idProvider);
             }
-            console.log("nid Provider new", idProvider);
-            console.log("array provider last:", providers);
             jsonFormatElement = {
               nid: inventoryTemp.elements[i].nid,
               quantity,
@@ -663,7 +674,6 @@ const AddElement = (props) => {
       }
     }
 
-    console.log(jsonFormatAddElements);
 
     let doc2 = "";
 
@@ -671,10 +681,14 @@ const AddElement = (props) => {
       doc2 = "RawMaterials";
     } else if (table === "herramientas_y_equipos") {
       doc2 = "ToolsEquipment";
-    } else if (table === "supplies") {
-      doc2 = "Supplies";
-    } else {
-      doc2 = "Implements";
+    } else if (table === "insumos"){
+      doc2 = "Supplies"
+    } else if (table === "implementos"){
+      doc2 = "Implements"
+    } else if (table === "productos_en_proceso"){
+      doc2 = "ItemsProcess"
+    } else if (table === "productos_en_embalaje"){
+      doc2 = "ItemsPackaging"
     }
 
     await props.firebase.db
@@ -690,40 +704,7 @@ const AddElement = (props) => {
       .catch((error) => {
         console.log("Error:", error);
       });
-
-    let jsonFormatModifyUser = {};
-
-    if (type === "factura") {
-      jsonFormatModifyUser = {
-        user: sesion.usuario,
-        table: table,
-        date: date,
-        add_bill: jsonFormatBillBuy,
-        last_provider: provider,
-        modify_provider: jsonFormatProvider,
-        last_elements_provider: lastItemsProvider,
-        modify_elements_provider: jsonFormatElementsProvider,
-        add_elements_inventary: items,
-      };
-    } else {
-      jsonFormatModifyUser = {
-        user: sesion.usuario,
-        table: table,
-        date: date,
-        add_elements_inventary: items,
-      };
-    }
-
-    await props.firebase.db
-      .collection("ModifyUserInventory")
-      .add(jsonFormatModifyUser)
-      .then((success) => {
-        let id = success.id;
-        props.history.replace(`/inventarios/agregar/asignar/${table}/${id}`);
-      })
-      .catch((error) => {
-        console.log("Error:", error);
-      });
+    props.history.replace(`/inventarios/agregar/asignar/${table}/${idReport}`);
   };
 
   return (
@@ -732,7 +713,7 @@ const AddElement = (props) => {
         <Grid container spacing={3}>
           <Grid item xs={12} md={8}>
             <Breadcrumbs aria-label="breadcrumbs">
-              <Link color="inherit" style={style.link} href="/home">
+              <Link color="inherit" style={style.link} href="/">
                 <HomeIcon />
                 Principal
               </Link>
@@ -743,9 +724,14 @@ const AddElement = (props) => {
                   ? "Materia Prima"
                   : table === "herramientas_y_equipos"
                   ? "Herramientas y Equipos"
-                  : table === "herramientas_y_equipos"
+                  : table === "productos_en_proceso"
+                  ? "Productos en Proceso"
+                  : table === "productos_en_embalaje"
+                  ? "Productos en Embalaje"
+                  : table === "insumos"
                   ? "Insumos"
-                  : "Implementos"}
+                  : "Implementos"
+                }
               </Typography>
               <Typography color="textPrimary">
                 {type === "factura" ? "Factura" : "Independiente"}

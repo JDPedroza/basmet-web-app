@@ -2,20 +2,19 @@ import React, { Component } from "react";
 import {
   Toolbar,
   Typography,
-  Button,
   IconButton,
   Drawer,
   Avatar,
+  Tooltip,
 } from "@material-ui/core";
 import { withStyles } from "@material-ui/core/styles";
 import { consumerFirebase } from "../../../server";
 import { compose } from "recompose";
 import { StateContext } from "../../../sesion/store";
 import { salirSesion } from "../../../sesion/actions/sesionAction";
-import { MenuDerecha } from "./MenuDerecha";
-import { MenuIzquierda } from "./MenuIzquierda";
+import MenuIzquierda from "./MenuIzquierda";
 import fotoUsuarioTemp from "../../../logo.svg";
-import { withRouter, Link } from "react-router-dom";
+import { withRouter } from "react-router-dom";
 
 const styles = (theme) => ({
   sectionDesktop: {
@@ -44,7 +43,7 @@ const styles = (theme) => ({
     color: "#212121",
   },
   list: {
-    width: 250,
+    width: 300,
   },
 });
 
@@ -91,36 +90,9 @@ class BarSesion extends Component {
 
     return (
       <div>
-        <Drawer
-          open={this.state.left}
-          onClose={this.toggleDrawer("left", false)}
-          anchor="left"
-        >
-          <div
-            role="button"
-            onClick={this.toggleDrawer("left", false)}
-            onKeyDown={this.toggleDrawer("left", false)}
-          >
-            <MenuIzquierda classes={classes} />
-          </div>
-        </Drawer>
-        <Drawer
-          open={this.state.right}
-          onClose={this.toggleDrawer("right", false)}
-          anchor="right"
-        >
-          <div
-            role="button"
-            onClick={this.toggleDrawer("right", false)}
-            onKeyDown={this.toggleDrawer("right", false)}
-          >
-            <MenuDerecha
-              classes={classes}
-              usuario={usuario}
-              textoUsuario={textoUsuario}
-              fotoUsuario={usuario.foto || fotoUsuarioTemp}
-              closeSession={this.salirSesionApp}
-            />
+        <Drawer open={this.state.left} anchor="left">
+          <div role="button">
+            <MenuIzquierda classes={classes} close={this.toggleDrawer} />
           </div>
         </Drawer>
         <Toolbar>
@@ -130,24 +102,24 @@ class BarSesion extends Component {
           <Typography variant="h6">BASMET</Typography>
           <div className={classes.grow}></div>
           <div className={classes.sectionDesktop}>
-            <IconButton color="inherit" component={Link} to="">
-              <i className="material-icons">mail_outline</i>
-            </IconButton>
-            <Button color="inherit" onClick={this.salirSesionApp}>
-              CERRAR SESION
-            </Button>
-            <Button color="inherit">{textoUsuario}</Button>
-            <Avatar
-              src={usuario.foto || fotoUsuarioTemp}
-            />
+            <Typography
+              variant="h6"
+              style={{ paddingRight: 10, paddingTop: 15 }}
+            >
+              {textoUsuario}
+            </Typography>
+            <Tooltip title="Editar Perfil" aria-label="Editar Perfil">
+              <IconButton href="/perfil/modify">
+                <Avatar src={usuario.foto || fotoUsuarioTemp} />
+              </IconButton>
+            </Tooltip>
           </div>
           <div className={classes.sectionMobile}>
-            <IconButton
-              color="inherit"
-              onClick={this.toggleDrawer("right", true)}
-            >
-              <i className="material-icons">more_vert</i>
-            </IconButton>
+            <Tooltip title="Editar Perfil" aria-label="Editar Perfil">
+              <IconButton href="/perfil/modify">
+                <Avatar src={usuario.foto || fotoUsuarioTemp} />
+              </IconButton>
+            </Tooltip>
           </div>
         </Toolbar>
       </div>
