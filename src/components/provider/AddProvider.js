@@ -16,6 +16,11 @@ import {
 import { consumerFirebase } from "../../server";
 import { crearKeyword } from "../../sesion/actions/keyWords";
 
+//e
+import { useStateValue } from "../../sesion/store";
+import { openMensajePantalla } from "../../sesion/actions/snackBarAction";
+//
+
 //temp
 import HomeIcon from "@material-ui/icons/Home";
 
@@ -43,6 +48,7 @@ const style = {
 
 const ControlledOpenSelect = (props) => {
   const [open, setOpen] = useState(false);
+  const [{ sesion }, dispatch] = useStateValue();
   const { type } = props.match.params;
 
   let [provider, changeDataProvider] = useState({
@@ -62,6 +68,18 @@ const ControlledOpenSelect = (props) => {
     last_bill: "",
     nid_elements_provider: "",
   });
+  //e
+  let [validationFormProvider, setDataValidationFormProvider] = useState({
+    type_document: false,
+    nid: false,
+    name: false,
+    country: false,
+    city: false,
+    address: false,
+    phone: false,
+    email: false,
+  });
+  //
 
   useEffect(() => {
     const { type } = props.match.params;
@@ -91,7 +109,7 @@ const ControlledOpenSelect = (props) => {
   const saveDataFirebase = async (e) => {
     e.preventDefault();
 
-    const jsonFormatElementsProvider = { elements: [] };
+    /*const jsonFormatElementsProvider = { elements: [] };
 
     let nidElementsProvider = "";
 
@@ -127,9 +145,74 @@ const ControlledOpenSelect = (props) => {
         provider.type_provider;
     }
 
-    provider.keywords = crearKeyword(textSearch);
+    provider.keywords = crearKeyword(textSearch);*/
+    //e
+    let validation = true;
+    console.log(provider)
+    if (provider.name === 0) {
+      validation = false;
+      validationFormProvider.name = true;
+    } else {
+      validationFormProvider.name = false;
+    }
+    if (provider.type_document.length === 0) {
+      validation = false;
+      validationFormProvider.type_document = true;
+    } else {
+      validationFormProvider.type_document = false;
+    }
+    if (provider.nid.length === 0) {
+      validation = false;
+      validationFormProvider.nid = true;
+    } else {
+      validationFormProvider.nid = false;
+    }
+    if (provider.country.length === 0) {
+      validation = false;
+      validationFormProvider.country = true;
+    } else {
+      validationFormProvider.country = false;
+    }
+    if (provider.city.length === 0) {
+      validation = false;
+      validationFormProvider.city = true;
+    } else {
+      validationFormProvider.city = false;
+    }
+    if (provider.address.length === 0) {
+      validation = false;
+      validationFormProvider.address = true;
+    } else {
+      validationFormProvider.address = false;
+    }
+    if (provider.phone.length === 0) {
+      validation = false;
+      validationFormProvider.phone = true;
+    } else {
+      validationFormProvider.phone = false;
+    }
+    if (provider.email.length === 0) {
+    validation = false;
+    validationFormProvider.email = true;
+    } else {
+    validationFormProvider.email = false;
+    }
 
-    props.firebase.db
+    if (!validation) {
+      openMensajePantalla(dispatch, {
+        open: true,
+        mensaje:
+          "Errores en el formulario. Por favor, diligencie todos los campos solicitados",
+      });
+    } else {
+      openMensajePantalla(dispatch, {
+        open: true,
+        mensaje:
+          "Validacion completa",
+      });
+
+      //moví esta sección aquí
+      /*props.firebase.db
       .collection("Providers")
       .add(provider)
       .then((success) => {
@@ -137,7 +220,13 @@ const ControlledOpenSelect = (props) => {
       })
       .catch((error) => {
         console.log("error: ", error);
-      });
+      });*/
+      //
+    }
+
+    //
+    
+
   };
 
   return (
@@ -153,7 +242,7 @@ const ControlledOpenSelect = (props) => {
               <Typography color="textPrimary">Proveedores</Typography>
               <Typography color="textPrimary">Agregar</Typography>
               <Typography color="textPrimary">
-                {provider.type_provider === "business"
+                {provider.type_provider === "name"
                   ? "Empresa"
                   : "Persona Natural"}
               </Typography>
@@ -162,19 +251,27 @@ const ControlledOpenSelect = (props) => {
         </Grid>
       </Paper>
       <Paper style={style.form}>
-        {provider.type_provider === "business" ? (
+        {provider.type_provider === "name" ? (
           <Grid container spacing={2} style={style.gridForm}>
             <Grid item xs={12} md={12}>
               <Typography color="textPrimary">Datos Empresa</Typography>
             </Grid>
             <Grid item xs={12} md={12}>
               <TextField
-                name="business"
+                name="name"
                 variant="outlined"
                 fullWidth
                 label="Nombre"
-                value={provider.business}
+                value={provider.name}
                 onChange={changeData}
+                //e
+                error={validationFormProvider.name}
+                helperText={
+                validationFormProvider.name
+                  ? "Por favor ingrese un nombre de empresa: ej. ingacoples"
+                  : ""
+                }
+                //
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -192,6 +289,14 @@ const ControlledOpenSelect = (props) => {
                   value={provider.type_document}
                   onChange={changeData}
                   fullWidth
+                  //e
+                  error={validationFormProvider.type_document}
+                  helperText={
+                    validationFormProvider.type_document
+                      ? "Por favor seleccione un opción: ej. CC"
+                      : ""
+                  }
+                  //
                 >
                   <MenuItem value={"NIT"}>NIT</MenuItem>
                 </Select>
@@ -205,6 +310,14 @@ const ControlledOpenSelect = (props) => {
                 label={provider.type_document || "Tipo Identificación"}
                 value={provider.nid}
                 onChange={changeData}
+                //e
+                error={validationFormProvider.nid}
+                helperText={
+                  validationFormProvider.nid
+                    ? "Por favor ingrese un valor: ej. 1013692638"
+                    : ""
+                }
+                //
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -215,6 +328,14 @@ const ControlledOpenSelect = (props) => {
                 label="Pais"
                 value={provider.country}
                 onChange={changeData}
+                //e
+                error={validationFormProvider.country}
+                helperText={
+                  validationFormProvider.country
+                    ? "Por favor ingrese un pais: ej. Colombia"
+                    : ""
+                }
+                //
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -225,6 +346,14 @@ const ControlledOpenSelect = (props) => {
                 label="Ciudad"
                 value={provider.city}
                 onChange={changeData}
+                //e
+                error={validationFormProvider.city}
+                helperText={
+                  validationFormProvider.city
+                    ? "Por favor ingrese una ciudad: ej. Bogotá"
+                    : ""
+                }
+                //
               />
             </Grid>
             <Grid item xs={12} md={12}>
@@ -235,6 +364,14 @@ const ControlledOpenSelect = (props) => {
                 label="Dirección"
                 value={provider.address}
                 onChange={changeData}
+                //e
+                error={validationFormProvider.address}
+                helperText={
+                  validationFormProvider.address
+                    ? "Por favor ingrese una dirección: ej. Calle 66 sur #17-48"
+                    : ""
+                }
+                //
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -245,6 +382,14 @@ const ControlledOpenSelect = (props) => {
                 label="Correo"
                 value={provider.email}
                 onChange={changeData}
+                //e
+                error={validationFormProvider.email}
+                helperText={
+                  validationFormProvider.email
+                    ? "Por favor ingrese un correo: ej. maurobel1230@gmail.com"
+                    : ""
+                }
+                //
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -255,6 +400,14 @@ const ControlledOpenSelect = (props) => {
                 label="Numero Telefono"
                 value={provider.phone}
                 onChange={changeData}
+                //e
+                error={validationFormProvider.phone}
+                helperText={
+                  validationFormProvider.phone
+                    ? "Por favor ingrese un telefóno: ej. 3132749738"
+                    : ""
+                }
+                //
               />
             </Grid>
             <Grid item xs={12} md={12}>
@@ -300,12 +453,21 @@ const ControlledOpenSelect = (props) => {
             </Grid>
             <Grid item xs={12} md={12}>
               <TextField
-                name="contact_name"
+                name="name"
                 variant="outlined"
                 fullWidth
                 label="Nombre"
-                value={provider.contact_name}
+                value={provider.name}
                 onChange={changeData}
+                //e
+                error={validationFormProvider.name}
+                helperText={
+                validationFormProvider.name
+                  ? "Por favor ingrese un nombre: ej. Edgar Beltrán"
+                  : ""
+                }
+
+                //
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -323,6 +485,14 @@ const ControlledOpenSelect = (props) => {
                   value={provider.type_document}
                   onChange={changeData}
                   fullWidth
+                  //e
+                  error={validationFormProvider.type_document}
+                  helperText={
+                    validationFormProvider.type_document
+                      ? "Por favor seleccione un opción: ej. CC"
+                      : ""
+                  }
+                  //
                 >
                   <MenuItem value={"Tipo Identificación"}>
                     <em>AA</em>
@@ -343,6 +513,14 @@ const ControlledOpenSelect = (props) => {
                 label={provider.type_document || "Tipo Identificación"}
                 value={provider.nid}
                 onChange={changeData}
+                //e
+                error={validationFormProvider.nid}
+                helperText={
+                  validationFormProvider.nid
+                    ? "Por favor ingrese un valor: ej. 1013692638"
+                    : ""
+                }
+                //
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -353,6 +531,14 @@ const ControlledOpenSelect = (props) => {
                 label="Pais"
                 value={provider.country}
                 onChange={changeData}
+                //e
+                error={validationFormProvider.country}
+                helperText={
+                  validationFormProvider.country
+                    ? "Por favor ingrese un pais: ej. Colombia"
+                    : ""
+                }
+                //
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -363,6 +549,14 @@ const ControlledOpenSelect = (props) => {
                 label="Ciudad"
                 value={provider.city}
                 onChange={changeData}
+                //e
+                error={validationFormProvider.city}
+                helperText={
+                  validationFormProvider.city
+                    ? "Por favor ingrese una ciudad: ej. Bogotá"
+                    : ""
+                }
+                //
               />
             </Grid>
             <Grid item xs={12} md={12}>
@@ -373,6 +567,14 @@ const ControlledOpenSelect = (props) => {
                 label="Dirección"
                 value={provider.address}
                 onChange={changeData}
+                //e
+                error={validationFormProvider.address}
+                helperText={
+                  validationFormProvider.address
+                    ? "Por favor ingrese una dirección: ej. Calle 66 sur #17-48"
+                    : ""
+                }
+                //
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -383,6 +585,14 @@ const ControlledOpenSelect = (props) => {
                 label="Correo"
                 value={provider.contact_email}
                 onChange={changeData}
+                //e
+                error={validationFormProvider.email}
+                helperText={
+                  validationFormProvider.email
+                    ? "Por favor ingrese un correo: ej. maurobel1230@gmail.com"
+                    : ""
+                }
+                //
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -393,6 +603,14 @@ const ControlledOpenSelect = (props) => {
                 label="Numero Telefono"
                 value={provider.contact_phone}
                 onChange={changeData}
+                //e
+                error={validationFormProvider.phone}
+                helperText={
+                  validationFormProvider.phone
+                    ? "Por favor ingrese un telefóno: ej. 3132749738"
+                    : ""
+                }
+                //
               />
             </Grid>
           </Grid>

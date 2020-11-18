@@ -16,11 +16,15 @@ import {
 
 //utils
 import { crearKeyword } from "../../sesion/actions/keyWords";
-
+//e
+import { useStateValue } from "../../sesion/store";
+//
 //icons
 import HomeIcon from "@material-ui/icons/Home";
 import { consumerFirebase } from "../../server";
-
+//e
+import { openMensajePantalla } from "../../sesion/actions/snackBarAction";
+//
 const style = {
   paper: {
     padding: 20,
@@ -45,7 +49,7 @@ const style = {
 
 const AddClient = (props) => {
   const [open, setOpen] = useState(false);
-
+  const [{ sesion }, dispatch] = useStateValue();
   let [client, changeDataClient] = useState({
     type_client: "",
     type_document: "",
@@ -62,6 +66,19 @@ const AddClient = (props) => {
     points_operation: [],
     keywords: [],
   });
+  //e
+  let [validationFormClient, setDataValidationFormClient] = useState({
+    type_document: false,
+    nid: false,
+    name: false,
+    country: false,
+    city: false,
+    address: false,
+    phone: false,
+    email: false,
+  });
+  //
+
 
   useEffect(() => {
     const { type } = props.match.params;
@@ -91,8 +108,6 @@ const AddClient = (props) => {
 
   const saveDataFirebase = async (e) => {
     e.preventDefault();
-
-
     let textSearch = "";
 
     if (client.type_client == "business") {
@@ -116,18 +131,87 @@ const AddClient = (props) => {
     }
 
     client.keywords = crearKeyword(textSearch);
-    
+    //e
+    let validation = true;
+    //  
     console.log(client)
+    // e
+    if (client.name.length === 0) {
+        validation = false;
+        validationFormClient.name = true;
+    } else {
+        validationFormClient.name = false;
+    }
+    if (client.type_document.length === 0) {
+        validation = false;
+        validationFormClient.type_document = true;
+    } else {
+        validationFormClient.type_document = false;
+    }
+    if (client.nid.length === 0) {
+        validation = false;
+        validationFormClient.nid = true;
+    } else {
+        validationFormClient.nid = false;
+    }
+    if (client.country.length === 0) {
+        validation = false;
+        validationFormClient.country = true;
+    } else {
+        validationFormClient.country = false;
+    }
+    if (client.city.length === 0) {
+        validation = false;
+        validationFormClient.city = true;
+    } else {
+        validationFormClient.city = false;
+    }
+    if (client.address.length === 0) {
+        validation = false;
+        validationFormClient.address = true;
+    } else {
+        validationFormClient.address = false;
+    }
+    if (client.phone.length === 0) {
+        validation = false;
+        validationFormClient.phone = true;
+    } else {
+        validationFormClient.phone = false;
+    }
+    if (client.email.length === 0) {
+      validation = false;
+      validationFormClient.email = true;
+  } else {
+      validationFormClient.email = false;
+  }
+    //
 
-    props.firebase.db
+    if (!validation) {
+      openMensajePantalla(dispatch, {
+        open: true,
+        mensaje:
+          "Errores en el formulario. Por favor, diligencie todos los campos solicitados",
+      });
+    } else {
+      openMensajePantalla(dispatch, {
+        open: true,
+        mensaje:
+          "Validacion completa",
+      });
+
+      //moví esta sección aquí
+      props.firebase.db
       .collection("Clients")
       .add(client)
       .then((success) => {
-        props.history.push("/home");
+        props.history.push("/");
       })
       .catch((error) => {
         console.log("error: ", error);
       });
+      //
+    }
+    
 
   };
 
@@ -155,13 +239,22 @@ const AddClient = (props) => {
             </Grid>
             <Grid item xs={12} md={12}>
               <TextField
-                name="business"
+                name="name"
                 variant="outlined"
                 fullWidth
                 label="Nombre"
                 value={client.business}
                 onChange={changeData}
+                //e
+                error={validationFormClient.name}
+                helperText={
+                validationFormClient.name
+                  ? "Por favor ingrese un nombre de empresa: ej. ingacoples"
+                  : ""
+                }
+                //
               />
+              
             </Grid>
             <Grid item xs={12} md={6}>
               <FormControl fullWidth>
@@ -178,6 +271,14 @@ const AddClient = (props) => {
                   value={client.type_document}
                   onChange={changeData}
                   fullWidth
+                  //e
+                  error={validationFormClient.type_document}
+                  helperText={
+                    validationFormClient.type_document
+                      ? "Por favor seleccione un opción: ej. CC"
+                      : ""
+                  }
+                  //
                 >
                   <MenuItem value={"NIT"}>NIT</MenuItem>
                 </Select>
@@ -191,6 +292,14 @@ const AddClient = (props) => {
                 label={client.type_document || "Tipo Identificación"}
                 value={client.nid}
                 onChange={changeData}
+                //e
+                error={validationFormClient.nid}
+                helperText={
+                  validationFormClient.nid
+                    ? "Por favor ingrese un valor: ej. 1013692638"
+                    : ""
+                }
+                //
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -201,6 +310,14 @@ const AddClient = (props) => {
                 label="Pais"
                 value={client.country}
                 onChange={changeData}
+                //e
+                error={validationFormClient.country}
+                helperText={
+                  validationFormClient.country
+                    ? "Por favor ingrese un pais: ej. Colombia"
+                    : ""
+                }
+                //
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -211,6 +328,14 @@ const AddClient = (props) => {
                 label="Ciudad"
                 value={client.city}
                 onChange={changeData}
+                //e
+                error={validationFormClient.city}
+                helperText={
+                  validationFormClient.city
+                    ? "Por favor ingrese una ciudad: ej. Bogotá"
+                    : ""
+                }
+                //
               />
             </Grid>
             <Grid item xs={12} md={12}>
@@ -221,6 +346,14 @@ const AddClient = (props) => {
                 label="Dirección"
                 value={client.address}
                 onChange={changeData}
+                //e
+                error={validationFormClient.address}
+                helperText={
+                  validationFormClient.address
+                    ? "Por favor ingrese una dirección: ej. Calle 66 sur #17-48"
+                    : ""
+                }
+                //
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -231,6 +364,14 @@ const AddClient = (props) => {
                 label="Correo"
                 value={client.email}
                 onChange={changeData}
+                //e
+                error={validationFormClient.email}
+                helperText={
+                  validationFormClient.email
+                    ? "Por favor ingrese un correo: ej. maurobel1230@gmail.com"
+                    : ""
+                }
+                //
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -241,6 +382,14 @@ const AddClient = (props) => {
                 label="Numero Telefono"
                 value={client.phone}
                 onChange={changeData}
+                //e
+                error={validationFormClient.phone}
+                helperText={
+                  validationFormClient.phone
+                    ? "Por favor ingrese un telefóno: ej. 3132749738"
+                    : ""
+                }
+                //
               />
             </Grid>
             <Grid item xs={12} md={12}>
@@ -286,12 +435,21 @@ const AddClient = (props) => {
             </Grid>
             <Grid item xs={12} md={12}>
               <TextField
-                name="contact_name"
+                name="name"
                 variant="outlined"
                 fullWidth
                 label="Nombre"
-                value={client.contact_name}
+                value={client.name}
                 onChange={changeData}
+                //e
+                error={validationFormClient.name}
+                helperText={
+                validationFormClient.name
+                  ? "Por favor ingrese un nombre: ej. Edgar Beltrán"
+                  : ""
+                }
+
+                //
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -309,6 +467,14 @@ const AddClient = (props) => {
                   value={client.type_document}
                   onChange={changeData}
                   fullWidth
+                  //e
+                  error={validationFormClient.type_document}
+                  helperText={
+                    validationFormClient.type_document
+                      ? "Por favor seleccione un opción: ej. CC"
+                      : ""
+                  }
+                  //
                 >
                   <MenuItem value={"Tipo Identificación"}>
                     <em>AA</em>
@@ -329,6 +495,14 @@ const AddClient = (props) => {
                 label={client.type_document || "Tipo Identificación"}
                 value={client.nid}
                 onChange={changeData}
+                //e
+                error={validationFormClient.nid}
+                helperText={
+                  validationFormClient.nid
+                    ? "Por favor ingrese un valor: ej. 1013692638"
+                    : ""
+                }
+                //
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -339,6 +513,14 @@ const AddClient = (props) => {
                 label="Pais"
                 value={client.country}
                 onChange={changeData}
+                //e
+                error={validationFormClient.country}
+                helperText={
+                  validationFormClient.country
+                    ? "Por favor ingrese un pais: ej. Colombia"
+                    : ""
+                }
+                //
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -349,6 +531,14 @@ const AddClient = (props) => {
                 label="Ciudad"
                 value={client.city}
                 onChange={changeData}
+                //e
+                error={validationFormClient.city}
+                helperText={
+                  validationFormClient.city
+                    ? "Por favor ingrese una ciudad: ej. Bogotá"
+                    : ""
+                }
+                //
               />
             </Grid>
             <Grid item xs={12} md={12}>
@@ -359,26 +549,51 @@ const AddClient = (props) => {
                 label="Dirección"
                 value={client.address}
                 onChange={changeData}
+                //e
+                error={validationFormClient.address}
+                helperText={
+                  validationFormClient.address
+                    ? "Por favor ingrese una dirección: ej. Calle 66 sur #17-48"
+                    : ""
+                }
+                //
               />
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField
-                name="contact_email"
+                name="email"
                 variant="outlined"
                 fullWidth
                 label="Correo"
-                value={client.contact_email}
+                value={client.email}
                 onChange={changeData}
+                //e
+                error={validationFormClient.email}
+                helperText={
+                  validationFormClient.email
+                    ? "Por favor ingrese un correo: ej. maurobel1230@gmail.com"
+                    : ""
+                }
+                //
               />
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField
-                name="contact_phone"
+                //corregi nombre de variable
+                name="phone"
                 variant="outlined"
                 fullWidth
                 label="Numero Telefono"
-                value={client.contact_phone}
+                value={client.phone}
                 onChange={changeData}
+                //e
+                error={validationFormClient.phone}
+                helperText={
+                  validationFormClient.phone
+                    ? "Por favor ingrese un telefóno: ej. 3132749738"
+                    : ""
+                }
+                //
               />
             </Grid>
           </Grid>

@@ -157,6 +157,7 @@ const AddPointOperation = (props) => {
     phone: "",
     points_operation: [],
   });
+ 
   let [selectedClient, setSelectedClient] = useState(null);
 
   let [pointOperation, changeDataPointOperation] = useState({
@@ -169,6 +170,17 @@ const AddPointOperation = (props) => {
     nid_inventories: "",
     nid_employees: "",
   });
+   //e
+   let [validationFormpointOperation, setDataValidationFormpointOperation] = useState({
+    //name_client: false,
+    //type_document: false,
+    //nid: false,
+    country: false,
+    city: false,
+    address: false,
+    phone: false,
+  });
+  //
 
   const fetchMyAPI = useCallback(async () => {
     let objectQuery = props.firebase.db.collection("Clients").orderBy("nid");
@@ -219,7 +231,7 @@ const AddPointOperation = (props) => {
   const saveDataFirebase = async (e) => {
     e.preventDefault();
 
-    const jsonFormatInventoriesPointOperation = {
+   /* const jsonFormatInventoriesPointOperation = {
       items_packaging: [],
       items_process: [],
       raw_materials: [],
@@ -295,8 +307,69 @@ const AddPointOperation = (props) => {
         mensaje: "Se agrego el punto de operación",
       });
       props.history.push("/home");
+    }*/
+
+    //e
+    let validation = true;
+    if (client.name_client.length === 0) {
+      validation = false;
+      validationFormpointOperation.name = true;
+    } else {
+      validationFormpointOperation.name = false;
     }
+    if (client.type_document.length === 0) {
+      validation = false;
+      validationFormpointOperation.type_document = true;
+    } else {
+      validationFormpointOperation.type_document = false;
+    }
+    if (client.nid.length === 0) {
+        validation = false;
+      validationFormpointOperation.nid = true;
+    } else {
+      validationFormpointOperation.nid = false;
+    }
+    if (pointOperation.country.length === 0) {
+      validation = false;
+      validationFormpointOperation.country = true;
+    } else {
+      validationFormpointOperation.country = false;
+    }
+    if (pointOperation.city.length === 0) {
+      validation = false;
+      validationFormpointOperation.city = true;
+    } else {
+      validationFormpointOperation.city = false;
+    }
+    if (pointOperation.address.length === 0) {
+      validation = false;
+      validationFormpointOperation.address = true;
+    } else {
+      validationFormpointOperation.address = false;
+    }
+    if (pointOperation.phone.length === 0) {
+      validation = false;
+      validationFormpointOperation.phone = true;
+    } else {
+      validationFormpointOperation.phone = false;
+    }
+    if (!validation) {
+      openMensajePantalla(dispatch, {
+      open: true,
+      mensaje:
+        "Errores en el formulario. Por favor, diligencie todos los campos solicitados",
+      });
+    } else {
+      openMensajePantalla(dispatch, {
+      open: true,
+      mensaje:
+        "Validacion completa",
+      });
+    }
+  //
   };
+
+  
 
   return (
     <Container component="main" maxWidth="md" justify="center">
@@ -350,6 +423,14 @@ const AddPointOperation = (props) => {
                   id="demo-controlled-open-select"
                   value={client.type_document}
                   fullWidth
+                  //e
+                  error={validationFormpointOperation.type_document}
+                  helperText={
+                    validationFormpointOperation.type_document
+                      ? "Por favor seleccione un opción: ej. CC"
+                      : ""
+                  }
+                  //
                 >
                   <MenuItem value={"Tipo Identificación"}>
                     <em>AA</em>
@@ -371,6 +452,14 @@ const AddPointOperation = (props) => {
                 fullWidth
                 label={client.type_document || "Tipo Identificación"}
                 value={client.nid}
+                //e
+                error={validationFormpointOperation.nid}
+                helperText={
+                  validationFormpointOperation.nid
+                    ? "Por favor ingrese un valor: ej. 1013692638"
+                    : ""
+                }
+                //
               />
             </Grid>
           </Grid>
@@ -391,6 +480,14 @@ const AddPointOperation = (props) => {
               label="Pais"
               value={pointOperation.country}
               onChange={changeData}
+              //e
+              error={validationFormpointOperation.country}
+              helperText={
+                validationFormpointOperation.country
+                  ? "Por favor ingrese un pais: ej. Colombia"
+                  : ""
+              }
+              //
             />
           </Grid>
           <Grid item xs={12} md={6}>
@@ -401,6 +498,14 @@ const AddPointOperation = (props) => {
               label="Ciudad"
               value={pointOperation.city}
               onChange={changeData}
+              //e
+              error={validationFormpointOperation.city}
+              helperText={
+                validationFormpointOperation.city
+                  ? "Por favor ingrese una ciudad: ej. Bogotá"
+                  : ""
+              }
+              //
             />
           </Grid>
           <Grid item xs={12} md={6}>
@@ -411,6 +516,14 @@ const AddPointOperation = (props) => {
               label="Dirección"
               value={pointOperation.address}
               onChange={changeData}
+              //e
+              error={validationFormpointOperation.address}
+              helperText={
+                validationFormpointOperation.address
+                  ? "Por favor ingrese una dirección: ej. Calle 66 sur #17-48"
+                  : ""
+              }
+              //
             />
           </Grid>
           <Grid item xs={12} md={6}>
@@ -421,6 +534,14 @@ const AddPointOperation = (props) => {
               label="Numero Telefono"
               value={pointOperation.phone}
               onChange={changeData}
+              //e
+              error={validationFormpointOperation.phone}
+              helperText={
+                validationFormpointOperation.phone
+                  ? "Por favor ingrese un telefóno: ej. 3132749738"
+                  : ""
+              }
+              //
             />
           </Grid>
         </Grid>

@@ -36,7 +36,6 @@ import {
 import { useStateValue } from "../../sesion/store";
 import MomentUtils from "@date-io/moment";
 import { openMensajePantalla } from "../../sesion/actions/snackBarAction";
-
 //icons
 import HomeIcon from "@material-ui/icons/Home";
 
@@ -116,6 +115,7 @@ const AddStandarizations = (props) => {
   const { type } = props.match.params;
   const [{ sesion }, dispatch] = useStateValue();
 
+  
   //elementsStandardized
   const [elementsStandardized, setElementsStandardized] = useState([]);
   let [
@@ -133,6 +133,17 @@ const AddStandarizations = (props) => {
     supplies: [],
     supplies_avaible: [],
   });
+  //e
+  /*let [validationFormSt, setDataValidationFormSt] = useState({
+    nid: false,
+    name: false,
+    country: false,
+    city: false,
+    address: false,
+    phone: false,
+    email: false,
+  });*/
+  //
 
   //dataRawMaterials
   const [elementsRawMaterials, setElementsRawMaterial] = useState([
